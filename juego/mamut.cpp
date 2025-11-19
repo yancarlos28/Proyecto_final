@@ -1,27 +1,35 @@
+// mamut.cpp
 #include "mamut.h"
-#include <iostream>
+#include <QDebug>
 mamut::mamut() {
-    vida = 200;
-    // ejemplo de ruta de patrulla (x positions)
+    // ✅ Usa setter público en lugar de asignación directa
+    setVida(200);
     rutaPatrulla = {0.0f, 200.0f, 400.0f};
 }
 
 void mamut::atacarAlJugador() {
-    std::cout << "[Mamut] embiste!\n";
+    qDebug() << "[Mamut] Embiste al jugador!";
 }
 
 void mamut::actuar(float dt) {
-    // ejemplo simple de patrulla: avanzar en X según velocidad
-    // si no hay velocidad, le damos una por defecto:
-    if (velX == 0.0f) velX = 30.0f;
-    actualizar(dt);
+    // Lógica de patrulla (usa getters/setters para posición)
+    if (getVelX() == 0.0f) setVel(30.0f, 0);
 
-    // lógica simplificada: cambiar dirección al alcanzar límites
-    if (posX < 0.0f) { posX = 0.0f; velX = std::abs(velX); }
-    if (posX > 500.0f) { posX = 500.0f; velX = -std::abs(velX); }
+    actualizar(dt); // Heredado de personaje
+
+    // Cambiar dirección en límites (usa getters)
+    if (getX() < 0.0f) {
+        setPos(0.0f, getY());
+        setVel(std::abs(getVelX()), getVelY());
+    }
+    if (getX() > 500.0f) {
+        setPos(500.0f, getY());
+        setVel(-std::abs(getVelX()), getVelY());
+    }
 }
 
 void mamut::debugPrint() const {
-    std::cout << "Mamut pos=(" << posX << "," << posY << ") vida=" << vida
-              << " rutaSize=" << rutaPatrulla.size() << "\n";
+    qDebug() << "Mamut pos=(" << getX() << "," << getY()
+    << ") vida=" << getVida()  // ✅ Usa getter
+    << " rutaSize=" << rutaPatrulla.size();
 }

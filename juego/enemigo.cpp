@@ -1,15 +1,16 @@
+// enemigo.cpp
 #include "enemigo.h"
-#include <iostream>
-
+#include <QDebug>
 enemigo::enemigo()
     : personaje(80), enAlerta(false), fase(0) {}
 
 void enemigo::actuar(float dt) {
-    // comportamiento base: simplemente se actualiza
+    // Comportamiento base
     actualizar(dt);
 }
 
 void enemigo::debugPrint() const {
-    std::cout << "Enemigo pos=(" << posX << "," << posY << ") vida=" << vida
-              << " alerta=" << enAlerta << " fase=" << fase << "\n";
+    qDebug() << "Enemigo pos=(" << getX() << "," << getY()
+    << ") vida=" << getVida()  // ✅ Usa getter
+    << " alerta=" << enAlerta << " fase=" << fase;
 }

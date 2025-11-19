@@ -1,8 +1,8 @@
 #include "personaje.h"
-#include <iostream>
+#include <QDebug>
 
 personaje::personaje(int vidaInicial)
-    : vida(vidaInicial), posX(0.0f), posY(0.0f), velX(0.0f), velY(0.0f) {}
+    : vida(vidaInicial), posX(0), posY(0), velX(0), velY(0) {}
 
 personaje::~personaje() = default;
 
@@ -12,16 +12,10 @@ void personaje::mover(float dx, float dy) {
 }
 
 void personaje::actualizar(float dt) {
-    // movimiento básico por velocidad
     posX += velX * dt;
     posY += velY * dt;
 }
 
-void personaje::recibirDanio(int valor) {
-    vida -= valor;
-    if (vida < 0) vida = 0;
-}
-
 void personaje::debugPrint() const {
-    std::cout << "Personaje pos=(" << posX << "," << posY << ") vida=" << vida << "\n";
+    qDebug() << "Personaje pos=(" << getX() << "," << getY() << ") vida=" << getVida();
 }
