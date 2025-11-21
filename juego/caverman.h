@@ -1,4 +1,3 @@
-// caverman.h
 #ifndef CAVERMAN_H
 #define CAVERMAN_H
 

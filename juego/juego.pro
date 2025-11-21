@@ -15,12 +15,20 @@ INCLUDEPATH += .
 
 # Input
 HEADERS += caverman.h enemigo.h mamut.h personaje.h proyectil.h snowman.h \
-    mainwindow.h
+    arma.h \
+    mainwindow.h \
+    modelomovimiento.h \
+    nivel.h \
+    nivelvolcan.h
 SOURCES += caverman.cpp \
+           arma.cpp \
            enemigo.cpp \
            main.cpp \
            mainwindow.cpp \
            mamut.cpp \
+           modelomovimiento.cpp \
+           nivel.cpp \
+           nivelvolcan.cpp \
            personaje.cpp \
            proyectil.cpp \
            snowman.cpp

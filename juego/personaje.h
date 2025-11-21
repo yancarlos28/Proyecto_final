@@ -3,9 +3,9 @@
 
 class personaje {
 private:
-    int vida;          // ✅ PRIVATE: solo accesible desde aquí
-    float posX, posY;  // ✅ PRIVATE
-    float velX, velY;  // ✅ PRIVATE
+    int vida;
+    double posX, posY;
+    double velX, velY;
 
 protected:
     static constexpr int VIDA_MAXIMA = 100; // Constante para clases derivadas

@@ -6,8 +6,8 @@
 
 class enemigo : public personaje {
 private:
-    bool enAlerta;  // ✅ Private
-    int fase;       // ✅ Private
+    bool enAlerta;
+    int fase;
 
 protected:
     // Getter protegido para clases derivadas
