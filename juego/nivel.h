@@ -2,22 +2,27 @@
 #define NIVEL_H
 
 #include "caverman.h"
-
+#include "proyectil.h"
+#include <vector>
 
 class Nivel
 {
 public:
     virtual ~Nivel() = default;
 
-    // Se llamará en cada frame para actualizar la lógica del nivel
+
     virtual void actualizar(float dt) = 0;
+    virtual bool estaCompletado() const { return false; }
+    virtual bool estaFallido() const { return false; }
 
     // Acceso al jugador (caverman)
-    caverman& getJugador() { return jugador; }
-    const caverman& getJugador() const { return jugador; }
+    caverman& getJugador();
+    const caverman& getJugador() const;
+
+    //metodo para proyectiles
+    virtual const std::vector<proyectil*>& getProyectiles() const;
 
 protected:
-    // Jugador del nivel
     caverman jugador;
 };
 

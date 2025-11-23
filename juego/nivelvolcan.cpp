@@ -5,14 +5,14 @@
 NivelVolcan::NivelVolcan()
 {
     // Posición inicial del caverman
-    jugador.setPos(100, 350);  // ajusta según tu escena
+    jugador.setPos(50, 720);  // ajusta según tu escena
     tiempoAcumulado = 0;
-    intervaloGeneracion = 1.5f; //cada 1.5 s
+    intervaloGeneracion = 0.5; //cada 1.5 s
     // Modelo de movimiento parabólico (gravedad positiva hacia abajo)
     ModeloMovimiento* modelo = new ModeloMovimiento(9.8);
 
     // Arma del volcán: daño 10, velocidad 150
-    armaVolcan = new Arma(10, 150.0f, modelo);
+    armaVolcan = new Arma(10, 180, modelo);
 }
 NivelVolcan::~NivelVolcan()
 {
@@ -29,17 +29,23 @@ NivelVolcan::~NivelVolcan()
 void NivelVolcan::generarRoca()
 {
     // Coordenadas de la boca del volcán (ajusta según tu fondo)
-    float origenX = 400;  // centro de la escena, por ejemplo
-    float origenY = 100;  // arriba
+    float origenX = 1090;  // centro de la escena, por ejemplo
+    float origenY = 210;  // arriba
 
-    // Dirección inicial (solo hacia abajo, puedes jugar con esto después)
-    float dirX = 0;
-    float dirY = 1;
+
+    float min = 0;
+    float max = 1;
+
+    // rand() genera entre 0 y RAND_MAX
+    float r = (float)rand() / (float)RAND_MAX;
+
+    float dirX = -0.5 ;
+    float dirY = min + r * (max - min);
 
     proyectil* p = armaVolcan->crearProyectil(origenX, origenY, dirX, dirY);
     rocas.push_back(p);
 
-    qDebug() << "[NivelVolcan] Se generó una bola de fuego en" << origenX << origenY;
+    //qDebug() << "[NivelVolcan] Se generó una bola de fuego en" << origenX << origenY;
 }
 
 void NivelVolcan::actualizar(float dt)
@@ -61,7 +67,7 @@ void NivelVolcan::actualizar(float dt)
     // 4) Eliminar rocas que se salieron de la pantalla (por ejemplo y > 600)
     int i = 0;
     while (i < rocas.size()) {
-        if (rocas[i]->getY() > 600) { // ajusta al alto de tu escena
+        if (rocas[i]->getY() > 710) { // ajusta al alto de tu escena
             delete rocas[i];
             rocas.erase(rocas.begin() + i);
             // NO incrementamos i, porque ahora hay un nuevo elemento en esa posición
