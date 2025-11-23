@@ -1,3 +1,4 @@
+// caverman.h
 #ifndef CAVERMAN_H
 #define CAVERMAN_H
 
@@ -5,9 +6,14 @@
 #include <algorithm>
 
 class caverman : public personaje {
+
 private:
     int energia;
     int puntuacion;
+
+    // salto
+    bool enSalto;
+    float velSaltoY;   // velocidad vertical del salto
 
 public:
     caverman();
@@ -23,6 +29,11 @@ public:
     void lanzar();
     void curar(int valor);
     void debugPrint() const override;
+
+    //para salto
+    bool estaSaltando() const { return enSalto; }
+    void iniciarSalto();
+    void actualizarSalto(float dt);
 };
 
 #endif

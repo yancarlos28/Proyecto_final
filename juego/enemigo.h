@@ -6,6 +6,7 @@
 
 class enemigo : public personaje {
 private:
+
     bool enAlerta;
     int fase;
 
@@ -16,6 +17,7 @@ protected:
     void setFase(int f) { fase = f; }
 
 public:
+
     enemigo();
     ~enemigo() override = default;
     int getFase() const { return fase; }
