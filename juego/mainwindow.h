@@ -12,9 +12,11 @@
 #include <QVBoxLayout>
 #include <memory>
 #include <vector>
-#include "nivel.h"
 
 #include "sprite.h"
+#include "nivel.h"
+
+
 QT_BEGIN_NAMESPACE
 namespace Ui {
 class MainWindow;
@@ -46,11 +48,12 @@ private:
     QGraphicsScene *scene;
 
     //logica del nivel
-    unique_ptr<Nivel> nivel;
+    std::unique_ptr<Nivel> nivel;
 
-    //--------sprite del personaje principal----------
-
+    //--------sprite del personajes:caverman,mamut----------
     sprite *cavermanSprite;
+    sprite *mamutSprite;
+
 
     //movimientos de teclado para personaje principal
     bool moviendoArriba = false;
@@ -66,25 +69,31 @@ private:
     int duracionNivel = 0;
     int segundosRestantesNivel = 0;
 
+    //elementos de escena
+    QGraphicsPixmapItem *barraVidaItem;
+    QPixmap barraVidaSheet;
+    void actualizarBarraVida(int vida);
+
     //Niveles
     enum class TipoNivel { Volcan, Mamut, JefeSnow };
+    TipoNivel tipoNivelActual = TipoNivel::Volcan;
     void cargarNivel(TipoNivel tipo);
     void limpiarSpritesNivel();
     void cambiarAlSiguienteNivel();
 
     //Volcan
-    vector<QGraphicsPixmapItem*> bolasSprites;
-    TipoNivel tipoNivelActual = TipoNivel::Volcan;
+    std::vector<QGraphicsPixmapItem*> bolasSprites;
     void sincronizarBolasConNivel();
     bool evaluarColisionBolasConJugador();
 
+    //Mamut
+    std::vector<QGraphicsPixmapItem*> lanzasSprites;
+    void sincronizarLanzasConNivel();
+    bool evaluarColisionLanzasConMamut();
+    bool evaluarColisionMamutConJugador();
 
-    //--------sprite del personaje principal----------
-    sprite *mamutSprite;
-
-
-
-
+    //Soga
+    QGraphicsLineItem *sogaItem = nullptr;  // soga gráfica
 
 };
 #endif // MAINWINDOW_H

@@ -11,7 +11,9 @@ sprite::sprite(QObject *parent, Tipo tipo)
     pixmap        = new QPixmap(":/sprites/walk-caverman.png");
     pixmap_danio  = new QPixmap(":/sprites/danio.png");
     pixmap_Mamut  = new QPixmap(":/sprites/mamut_corriendo.png");
-
+    pixmap_lanza  = new QPixmap(":/sprites/caverman_lanza.png");
+    pixmap_MamutDanio  = new QPixmap(":/sprites/mamut_herido.png");
+    pixmap_MamutMuerto = new QPixmap(":/sprites/mamut_muerto.png");
     // valores iniciales comunes
     filas        = 0;
     columnas     = 0;
@@ -22,7 +24,7 @@ sprite::sprite(QObject *parent, Tipo tipo)
     ancho  = 49;
     alto   = 71;
 
-    // dimensiones del mamut (las guardas también)
+    // dimensiones del mamut
     ancho_mamut = 15+370;
     alto_mamut  = 260;
 
@@ -34,6 +36,7 @@ sprite::sprite(QObject *parent, Tipo tipo)
 
     estado = Estado::Quieto;
     estadoAnterior = Estado::Quieto;
+    estadoMamut = EstadoMamut::Normal;
     dir = Direccion::Derecha;
 
     timer->start(70);
@@ -47,6 +50,8 @@ sprite::sprite(QObject *parent, Tipo tipo)
             this, SLOT(finDanio()));
 }
 
+sprite::Direccion sprite::getDireccion() const { return dir; }
+
 //Modos para cuando recibe daño
 void sprite::mostrarDanio()
 {
@@ -57,13 +62,42 @@ void sprite::mostrarDanio()
     columnas = 0;
 
     // arrancar temporizador de 500 ms
-    timerDanio->start(10);
+    timerDanio->start(100);
 }
 void sprite::finDanio()
 {
-    // volver al estado anterior
-    estado = estadoAnterior;
-    columnas = 0;
+    if (tipoSprite == Tipo::Caverman) {
+        // volver al estado anterior del caverman
+        estado = estadoAnterior;
+        columnas = 0;
+    } else if (tipoSprite == Tipo::Mamut) {
+        // si el mamut estaba en daño, vuelve a normal
+        if (estadoMamut == EstadoMamut::Danio) {
+            estadoMamut = EstadoMamut::Normal;
+        }
+    }
+}
+void sprite::mostrarDanioMamut()
+{
+
+    if (tipoSprite != Tipo::Mamut) {
+        return;
+    }
+
+    estadoMamut = EstadoMamut::Danio;
+    columnas_mamut = 0;
+    timerDanio->start(200);       // tiempo de impacto
+}
+//Modo muerto del mamut
+void sprite::matarMamut()
+{
+    if (tipoSprite != Tipo::Mamut) {
+        return;
+    }
+
+    estadoMamut = EstadoMamut::Muerto;
+    columnas_mamut = 0;
+    // aquí NO arrancamos timer, se queda muerto
 }
 
 void sprite::setEstado(Estado e)
@@ -76,6 +110,34 @@ void sprite::setEstado(Estado e)
     estado = e;
     columnas = 0;  // empezar desde el primer frame de esa animación
 }
+/*void sprite::setVidaBarra(int vida)
+{
+    // Solo tiene sentido si este sprite es una barra de vida
+    if (tipoSprite != Tipo::BarraVida || pixmapVida == nullptr)
+        return;
+
+    // Clampear vida entre 0 y 100
+    if (vida < 0) vida = 0;
+    if (vida > 100) vida = 100;
+
+    // Cada corazón vale 20 puntos de vida (100 / 5)
+    // 100 → 0 (fila 0, 5 corazones)
+    // 80  → 1 (fila 1, 4 corazones)
+    // 60  → 2 (fila 2, 3 corazones)
+    // 40  → 3 (fila 3, 2 corazones)
+    // 20 o 0 → 4 (fila 4, 1 o 0 corazones según tu imagen)
+    int perdida = 100 - vida;
+    int indice = perdida / 20;
+
+    if (indice < 0) indice = 0;
+    if (indice > 4) indice = 4;
+
+    filaVida = indice;
+
+    // Redibujar
+    update();
+}
+*/
 void sprite::Actualizacion()
 {
     if (tipoSprite == Tipo::Caverman) {
@@ -98,8 +160,14 @@ void sprite::Actualizacion()
 
     } else { // Tipo::Mamut
         // --- ANIMACIÓN MAMUT ---
-        columnas_mamut += ancho_mamut;
-        if (columnas_mamut >= pixmap_Mamut->width()) {
+        if (estadoMamut == EstadoMamut::Normal) {
+            // solo animamos cuando está normal (corriendo)
+            columnas_mamut += ancho_mamut;
+            if (columnas_mamut >= pixmap_Mamut->width()) {
+                columnas_mamut = 0;
+            }
+        } else {
+            // si está herido o muerto, usamos siempre el primer frame
             columnas_mamut = 0;
         }
     }
@@ -134,7 +202,22 @@ void sprite::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QW
                                     *actual);
             }
 
-        } else {
+        }
+        else if (estado == Estado::lanza) {
+            const QPixmap *actual = pixmap_lanza;
+
+            if (dir == Direccion::Izquierda) {
+                painter->scale(-1, 1);
+                painter->drawPixmap(-73/2 * -1 - 73,
+                                    -72/2,
+                                    *actual);
+            } else {
+                painter->drawPixmap(-73/2, -72/2,
+                                    *actual);
+            }
+
+        }
+        else {
             const QPixmap *actual = pixmap;
 
             int srcX = static_cast<int>(columnas);
@@ -154,18 +237,32 @@ void sprite::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QW
 
     } else {
         // ==== MAMUT ====
-        const QPixmap *actual = pixmap_Mamut;
+        const QPixmap *actual = nullptr;
+
+        if (estadoMamut == EstadoMamut::Normal) {
+            actual = pixmap_Mamut;
+        }
+        else if (estadoMamut == EstadoMamut::Danio) {
+            actual = pixmap_MamutDanio;
+        }
+        else if (estadoMamut == EstadoMamut::Muerto) {
+            actual = pixmap_MamutMuerto;
+        }
 
         int srcX = static_cast<int>(columnas_mamut);
         int srcY = static_cast<int>(filas_mamut); // si solo hay una fila, 0
 
         if (dir == Direccion::Izquierda) {
             painter->scale(-1, 1);
-            painter->drawPixmap(-ancho/2 * -1 - ancho,-alto/2,*actual,srcX, srcY,
+            painter->drawPixmap(-ancho/2 * -1 - ancho, -alto/2,
+                                *actual,
+                                srcX, srcY,
                                 static_cast<int>(ancho_mamut),
                                 static_cast<int>(alto_mamut));
         } else {
-            painter->drawPixmap(-ancho/2, -alto/2,*actual,srcX, srcY,
+            painter->drawPixmap(-ancho/2, -alto/2,
+                                *actual,
+                                srcX, srcY,
                                 static_cast<int>(ancho_mamut),
                                 static_cast<int>(alto_mamut));
         }

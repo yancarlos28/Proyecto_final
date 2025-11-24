@@ -4,7 +4,7 @@
 
 mamut::mamut()
     : indiceObjetivo(0),
-    velocidad(150)      // velocidad base
+    velocidad(300)      // velocidad base
 {
     setVida(200);           // Usa setter heredado
 
@@ -12,7 +12,7 @@ mamut::mamut()
     rutaPatrulla = {0, 200, 400};
 
     if (!rutaPatrulla.empty()) {
-        setPos(rutaPatrulla[0], 720.0f); // mismo “piso” que el caverman
+        setPos(rutaPatrulla[0], 720); // mismo “piso” que el caverman
     }
 }
 void mamut::setRuta(const std::vector<float>& ruta)
@@ -38,7 +38,7 @@ void mamut::actuar(float dt)
     float xDestino = rutaPatrulla[indiceObjetivo];
 
     // ¿Llegó (o casi) al punto actual?
-    if (std::fabs(xDestino - xActual) < 5.0f) {
+    if (std::fabs(xDestino - xActual) < 5.0) {
         indiceObjetivo = (indiceObjetivo + 1) % rutaPatrulla.size();
         xDestino = rutaPatrulla[indiceObjetivo];
     }

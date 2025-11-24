@@ -8,30 +8,33 @@
 class caverman : public personaje {
 
 private:
+
     int energia;
     int puntuacion;
 
     // salto
     bool enSalto;
-    float velSaltoY;   // velocidad vertical del salto
+    float velSaltoY;
+    float pisoY;
 
 public:
+
     caverman();
     ~caverman() override = default;
 
     // Getters para energía y puntuación
-    int getEnergia() const { return energia; }
-    int getPuntuacion() const { return puntuacion; }
+    int getEnergia() const;
+    int getPuntuacion() const;
 
-    void setEnergia(int val) { energia = std::min(100, val); }
-    void setPuntuacion(int val) { puntuacion = val; }
+    void setEnergia(int val);
+    void setPuntuacion(int val);
 
     void lanzar();
     void curar(int valor);
     void debugPrint() const override;
 
     //para salto
-    bool estaSaltando() const { return enSalto; }
+    bool estaSaltando() const;
     void iniciarSalto();
     void actualizarSalto(float dt);
 };

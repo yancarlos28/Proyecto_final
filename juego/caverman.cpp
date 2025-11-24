@@ -5,7 +5,15 @@
 //constructor
 caverman::caverman()
     : personaje(120), energia(100), puntuacion(0),
-enSalto(false), velSaltoY(0.0){}
+    enSalto(false), velSaltoY(0.0), pisoY(720){}
+
+int caverman::getEnergia() const { return energia; }
+
+int caverman::getPuntuacion() const { return puntuacion; }
+
+void caverman::setEnergia(int val) { energia = std::min(100, val); }
+
+void caverman::setPuntuacion(int val) { puntuacion = val; }
 
 //lanzar
 void caverman::lanzar() {
@@ -31,6 +39,8 @@ void caverman::debugPrint() const {
     << " energia=" << energia << " pts=" << puntuacion;
 }
 
+bool caverman::estaSaltando() const { return enSalto; }
+
 
 //para saltar
 void caverman::iniciarSalto()
@@ -38,6 +48,7 @@ void caverman::iniciarSalto()
     if (!enSalto) {
         enSalto = true;
         velSaltoY = -350;
+        pisoY = getY();
     }
 }
 void caverman::actualizarSalto(float dt)
@@ -45,18 +56,14 @@ void caverman::actualizarSalto(float dt)
     if (enSalto) {
         float g = 800;
 
-        // actualizar velocidad vertical
         velSaltoY = velSaltoY + g * dt;
 
-        // mover en Y
         float x = getX();
         float y = getY();
 
         y = y + velSaltoY * dt;
 
-        float pisoY = 720;
-
-        // 3) comprobar si llegó al piso
+        // usar el piso que guardamos al iniciar el salto
         if (y >= pisoY) {
             y = pisoY;
             velSaltoY = 0;
@@ -65,4 +72,5 @@ void caverman::actualizarSalto(float dt)
 
         setPos(x, y);
     }
+
 }
