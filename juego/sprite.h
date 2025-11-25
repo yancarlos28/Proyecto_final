@@ -14,7 +14,7 @@ class sprite : public QObject, public QGraphicsItem
 
 public:
     enum class Tipo {
-        Caverman, Mamut };
+        Caverman, Mamut, BarraVida, Snowman };
 
     //Para caverman
     explicit sprite(QObject *parent = nullptr, Tipo tipo = Tipo::Caverman);
@@ -31,12 +31,12 @@ public:
     enum class Direccion { Derecha, Izquierda };
     Direccion getDireccion() const;
 
-    /*/ --- Barra de vida ---
+    // --- Barra de vida ---
     QPixmap *pixmapVida = nullptr;
     int vidaAncho = 0;     // ancho de un frame (530)
     int vidaAlto = 0;      // alto de un frame (600/5 = 120)
     int filaVida = 0;      // 0 = 5 corazones, 1 = 4, ... 4 = 1
-*/
+
     //Reserva para tiempos
     QTimer *timer;
     QTimer *timerDanio;
@@ -50,6 +50,17 @@ public:
     float alto_mamut;
     enum class EstadoMamut { Normal, Danio, Muerto };
     EstadoMamut estadoMamut = EstadoMamut::Normal;
+
+    //Snowman
+    QPixmap *pixmap_Snowman=nullptr;
+    QPixmap *pixmap_SnowmanDanio;
+    QPixmap *pixmap_SnowmanMuerto;
+    float filas_Snowman, columnas_Snowman;
+    float ancho_Snowman;
+    float alto_Snowman;
+    enum class EstadoSnowman { Normal, Danio, Atacar, Muerto };
+    EstadoSnowman estadoSnowman = EstadoSnowman::Normal;
+
 
     //Setter
     void setEstado(Estado e);

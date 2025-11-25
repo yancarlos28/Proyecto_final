@@ -53,6 +53,7 @@ private:
     //--------sprite del personajes:caverman,mamut----------
     sprite *cavermanSprite;
     sprite *mamutSprite;
+    sprite *snowmanSprite=nullptr;
 
 
     //movimientos de teclado para personaje principal
@@ -70,9 +71,13 @@ private:
     int segundosRestantesNivel = 0;
 
     //elementos de escena
-    QGraphicsPixmapItem *barraVidaItem;
-    QPixmap barraVidaSheet;
     void actualizarBarraVida(int vida);
+
+    // === Barra de vida ===
+    QGraphicsPixmapItem *barraVidaItem = nullptr;
+    QPixmap barraVidaSheet;
+    int vidaFrameAncho = 0;
+    int vidaFrameAlto  = 0;
 
     //Niveles
     enum class TipoNivel { Volcan, Mamut, JefeSnow };
@@ -91,9 +96,15 @@ private:
     void sincronizarLanzasConNivel();
     bool evaluarColisionLanzasConMamut();
     bool evaluarColisionMamutConJugador();
-
     //Soga
-    QGraphicsLineItem *sogaItem = nullptr;  // soga gráfica
+    QGraphicsLineItem *sogaItem = nullptr;
+
+    //Hombre nieve
+    std::vector<QGraphicsPixmapItem*> bolasNieveSprites;
+    void sincronizarBolasNieveConNivel();
+    bool evaluarColisionBolasNieveConJugador();
+
+
 
 };
 #endif // MAINWINDOW_H
