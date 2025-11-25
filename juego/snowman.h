@@ -6,11 +6,12 @@
 #include <vector>
 
 class Snowman : public enemigo {
+
 private:
     float escalaTamano;
     int faseAtaque;
-    float temperaturaPercibida; // Componente de Percepción
-    std::vector<float> historialTemperaturas; // Componente de Aprendizaje
+    float temperaturaPercibida;
+    std::vector<float> historialTemperaturas; // Para aprendizaje
 
 protected:
     // Métodos de razonamiento
@@ -25,10 +26,8 @@ public:
     void debugPrint() const override;
 
     // Interfaces del agente inteligente
-    void percibirTemperatura(float temp) { temperaturaPercibida = temp; }
-    void aprenderDeTemperatura(float temp) {
-        historialTemperaturas.push_back(temp);
-    }
+    void percibirTemperatura(float temp);
+    void aprenderDeTemperatura(float temp);
 };
 
 #endif

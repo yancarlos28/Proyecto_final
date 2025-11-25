@@ -1,11 +1,11 @@
 // snowman.cpp
 #include "snowman.h"
-#include <algorithm>
 #include <QDebug>
 Snowman::Snowman()
     : escalaTamano(1.0f), faseAtaque(0), temperaturaPercibida(0.0f) {
-    setVida(300); // ✅ Usa setter público
-    setAlerta(true); // Siempre en alerta
+    setPos(800,300);
+    setVida(300);
+    setAlerta(true);
 }
 
 void Snowman::actuar(float dt) {
@@ -49,4 +49,10 @@ void Snowman::debugPrint() const {
     qDebug() << "Snowman pos=(" << getX() << "," << getY()
     << ") vida=" << getVida()  // ✅ Usa getter
     << " escala=" << escalaTamano << " fase=" << getFase();
+}
+
+void Snowman::percibirTemperatura(float temp) { temperaturaPercibida = temp; }
+
+void Snowman::aprenderDeTemperatura(float temp) {
+    historialTemperaturas.push_back(temp);
 }
