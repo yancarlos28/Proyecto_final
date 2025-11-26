@@ -17,7 +17,7 @@ NivelSnowman::NivelSnowman()
     // 3) Arma para bolas parabólicas
     //    Modelo con gravedad hacia abajo
     ModeloMovimiento* modeloParabola = new ModeloMovimiento(9.8);
-    armaParabolica = new Arma(10, 250, modeloParabola);
+    armaParabolica = new Arma(1, 250, modeloParabola);
 
     // 4) Estado de patrones
     patronActual = PatronAtaque::Parabolico;

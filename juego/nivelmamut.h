@@ -14,11 +14,18 @@ private:
     float anchoMundo;
     Arma* armaJugador;
 
-    // --- SOGA Y PÉNDULO ---
+    // Soga en pendulo
     MovimientoPendular movimientoSoga;
     float sogaXExtremo;
     float sogaYExtremo;
     bool jugadorColgado;
+    // Caida después de la soga
+    float velCaida;   // velocidad vertical de caída
+    float pisoY;      // altura del piso en este nivel (centro del caverman)
+
+    int municionJugador = 0;      // cuántas lanzas puede tirar el jugador
+    float tiempoFlechas = 0.0f;   // acumulador para spawnear flechas
+
 public:
 
     NivelMamut();
@@ -43,9 +50,15 @@ public:
     float getSogaYAncla() const { return movimientoSoga.getYAncla(); }
     float getSogaXExtremo() const { return sogaXExtremo; }
     float getSogaYExtremo() const { return sogaYExtremo; }
-
     void intentarAgarrarSoga();
     void soltarSoga();
+
+    void GenerarFlechaDesdeArriba();
+    void actualizarFlechas(float dt);
+    void recogerFlechas();
+
+    int getMunicionJugador() const { return municionJugador; }
+
 
 };
 

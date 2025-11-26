@@ -24,7 +24,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     scene = new QGraphicsScene(this);
 
-    // Configurar la vista una sola vez
+    // Config de la vista
     setFocusPolicy(Qt::StrongFocus);
     ui->graphicsView->setFocusPolicy(Qt::NoFocus);
     ui->graphicsView->setScene(scene);
@@ -34,41 +34,10 @@ MainWindow::MainWindow(QWidget *parent)
     ui->graphicsView->setFixedSize(1536, 1024);
     this->setFixedSize(ui->graphicsView->width() + 10,ui->graphicsView->height() + 20);
 
-    // Sprite del jugador
-    scene->addItem(cavermanSprite);
-    cavermanSprite->setScale(2.2);
-    cavermanSprite->setZValue(10);
-
-
-    // Barra de vida jugador
-    barraVidaSheet.load(":/recursos_juego/corazones.PNG");
-
-    if (barraVidaSheet.isNull()) {
-        qDebug() << "ERROR: no se pudo cargar corazones.png";
-    } else {
-        // Ancho de una fila completa
-        vidaFrameAncho = barraVidaSheet.width();
-        vidaFrameAlto  = barraVidaSheet.height() / 6;
-        // Primer frame = fila 0 (vida completa)
-        QPixmap frame = barraVidaSheet.copy(0, 0,vidaFrameAncho,vidaFrameAlto);
-        barraVidaItem = scene->addPixmap(frame);
-        barraVidaItem->setZValue(100);
-        barraVidaItem->setScale(0.4);
-        barraVidaItem->setFlag(QGraphicsItem::ItemIgnoresTransformations);
-    }
-
-    // Cargar el primer nivel
-    cargarNivel(TipoNivel::JefeSnow);
-
-    // Timer del juego
-    timerJuego = new QTimer(this);
-    connect(timerJuego, &QTimer::timeout, this, &MainWindow::actualizarJuego);
-    timerJuego->start(16);
-    // --- Timer para segundos ---
-    timerTiempo = new QTimer(this);
-    connect(timerTiempo, &QTimer::timeout, this, &MainWindow::actualizarTiempo);
-    timerTiempo->start(1000);
+    // Arrancar en el menú
+    irAlMenu();
 }
+
 
 //Destructor UI
 MainWindow::~MainWindow()
@@ -76,277 +45,118 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-//Teclado para el caverman
-void MainWindow::keyPressEvent(QKeyEvent *event)
+void MainWindow::irAlMenu()
 {
-    if (event->isAutoRepeat()&& event->key() != Qt::Key_X) {
-        event->ignore();
-        return;
+    estadoJuego = EstadoJuego::EnMenu;
+
+    // Detener timers
+    if (timerJuego) {
+        timerJuego->stop();
+    }
+    if (timerTiempo) {
+        timerTiempo->stop();
     }
 
-    bool teclaMovimiento = false;
-    caverman &jug = nivel->getJugador();
-
-    if (tipoNivelActual == TipoNivel::Mamut &&
-        event->key() == Qt::Key_X) {
-
-        NivelMamut *nm = dynamic_cast<NivelMamut*>(nivel.get());
-        if (nm) {
-            nm->intentarAgarrarSoga();
-        }
-        return;
+    // Quitar sprite del jugador y barra de vida de la escena (pero sin destruirlos)
+    if (cavermanSprite && cavermanSprite->scene()) {
+        scene->removeItem(cavermanSprite);
     }
-    //Izquierda
-    if (event->key() == Qt::Key_A) {
-        moviendoIzquierda = true;
-        teclaMovimiento = true;
-        if (cavermanSprite)
-            cavermanSprite->setDireccion(sprite::Direccion::Izquierda);
-
-    }
-    //Derecha
-    else if (event->key() == Qt::Key_D) {
-        moviendoDerecha = true;
-        teclaMovimiento = true;
-        if (cavermanSprite)
-            cavermanSprite->setDireccion(sprite::Direccion::Derecha);
-
-    }
-    //Saltar
-    else if (event->key() == Qt::Key_W) {
-        jug.iniciarSalto();
-
-        if (cavermanSprite) {
-            cavermanSprite->setEstado(sprite::Estado::Saltar);
-        }
-        return;
-
-    }
-    //Lanzar lanzas
-    else if (event->key() == Qt::Key_Space) {
-        float dirX = 1.0;
-        if (cavermanSprite &&
-            cavermanSprite->getDireccion() == sprite::Direccion::Izquierda) {
-            dirX = -1.0f;
-        }
-
-        NivelMamut *nivelMamut = dynamic_cast<NivelMamut*>(nivel.get());
-        if (nivelMamut != nullptr) {
-            nivelMamut->lanzarDesdeJugador(dirX);
-        }
-
-        return;
-
-    }
-    else {
-        QMainWindow::keyPressEvent(event);
-        return;
+    if (barraVidaItem && barraVidaItem->scene()) {
+        scene->removeItem(barraVidaItem);
     }
 
-    //Caminar
-    if (teclaMovimiento && cavermanSprite) {
-        cavermanSprite->setEstado(sprite::Estado::Caminar);
-    }
-}
-void MainWindow::keyReleaseEvent(QKeyEvent *event)
-{
-    if (tipoNivelActual == TipoNivel::Mamut &&
-        event->key() == Qt::Key_X) {
+    // Limpiar sprites del nivel (mamut, bolas, lanzas, etc.)
+    limpiarSpritesNivel();
 
-        NivelMamut *nm = dynamic_cast<NivelMamut*>(nivel.get());
-        if (nm) {
-            nm->soltarSoga();
-        }
-        return;
-    }
-    if (event->isAutoRepeat()) {
-        event->ignore();
-        return;
-    }
-    if (event->key() == Qt::Key_A) {
-        moviendoIzquierda = false;
-    }
-    else if (event->key() == Qt::Key_D) {
-        moviendoDerecha = false;
-    }
+    // Poner fondo y aspecto de menú
+    mostrarMenu();
 
-    if (!moviendoIzquierda && !moviendoDerecha)
-    {
-        if (cavermanSprite)
-            cavermanSprite->setEstado(sprite::Estado::Quieto);
-    }
-
-    QMainWindow::keyReleaseEvent(event);
+    // Mostrar botones del menú (debes tener 3 en el .ui)
+    ui->pushButtonVolcan->show();
+    ui->pushButtonMamut->show();
+    ui->pushButtonSnow->show();
 }
 
-
-//Actualizar juego y tiempo
-void MainWindow::actualizarJuego()
+void MainWindow::mostrarMenu()
 {
-    float dt = 0.016;
+    scene->clear();
+    scene->setSceneRect(0, 0, 1536, 1024);
 
-    nivel->actualizar(dt);
+    // Fondo del menú
+    QImage img(":/escenas/menu.jpg");
+    QImage imgEscalada = img.scaled(1536, 1024,
+                                    Qt::IgnoreAspectRatio,
+                                    Qt::SmoothTransformation);
+    scene->setBackgroundBrush(QPixmap::fromImage(imgEscalada));
 
-    caverman &jug = nivel->getJugador();
+    // Ocultar labels de juego mientras estamos en el menú
+    if (ui->lblTiempoJuego)       ui->lblTiempoJuego->setVisible(false);
+    if (ui->lblTemporizadorNivel) ui->lblTemporizadorNivel->setVisible(false);
 
-    float x = jug.getX();
-    float paso = 2.5;
-
-    if (moviendoIzquierda) x -= paso;
-    if (moviendoDerecha)   x += paso;
-
-    // Movimiento en x
-    jug.setPos(x, jug.getY());
-
-    // Actualizar salto
-    jug.actualizarSalto(dt);
-
-    // Limitar a la escena
-    QRectF limites = scene->sceneRect();
-    if (jug.getX() < limites.left())  jug.setPos(limites.left(), jug.getY());
-    if (jug.getX() > limites.right()) jug.setPos(limites.right(), jug.getY());
-    if (jug.getY() < limites.top())   jug.setPos(jug.getX(), limites.top());
-    if (jug.getY() > limites.bottom())jug.setPos(jug.getX(), limites.bottom());
-
-    //Nivel mamut
-    if (tipoNivelActual == TipoNivel::Mamut && mamutSprite &&sogaItem) {
-        //Centrar al jugador
-        ui->graphicsView->centerOn(cavermanSprite);
-
-        NivelMamut* nivelMamut = static_cast<NivelMamut*>(nivel.get());
-        mamut &boss = nivelMamut->getMamut();
-
-        //Posicion mamut
-        mamutSprite->setPos(boss.getX(), boss.getY());
-
-        //Para la soga del nivel, obtener posiciones
-        QPointF ancla(nivelMamut->getSogaXAncla(), nivelMamut->getSogaYAncla());
-        QPointF extremo(nivelMamut->getSogaXExtremo(), nivelMamut->getSogaYExtremo());
-        sogaItem->setLine(QLineF(ancla, extremo));
-        sogaItem->setVisible(true);
-
-        // Actualizar dirección según velocidad del mamut
-        if (boss.getVelX() < 0) {
-            mamutSprite->setDireccion(sprite::Direccion::Izquierda);
-        }
-        else if (boss.getVelX() > 0) {
-            mamutSprite->setDireccion(sprite::Direccion::Derecha);
-        }
-        //Lanzas con mamut
-        sincronizarLanzasConNivel();
-        bool huboImpactoLanzas = evaluarColisionLanzasConMamut();
-        if (huboImpactoLanzas) {
-            qDebug() << "[Mamut] Recibió impacto de lanza. Vida:"
-                     << static_cast<NivelMamut*>(nivel.get())->getMamut().getVida();
-        }
-        //Mamut con jugador
-        bool huboColisionMamut = evaluarColisionMamutConJugador();
-        if (huboColisionMamut) {
-            qDebug() << "[Jugador] Golpeado por mamut. Vida:"
-                     << nivel->getJugador().getVida();
-        }
-
-    }
-
-    if (tipoNivelActual == TipoNivel::Volcan) {
-        // Sincronizar las bolas de fuego lógicas con los sprites gráficos
-        sincronizarBolasConNivel();
-        bool huboColision = evaluarColisionBolasConJugador();
-        if (huboColision) {
-            qDebug() << "El caverman recibió un golpe. Vida:" << nivel->getJugador().getVida();
-        }
-    }
-    if (tipoNivelActual == TipoNivel::JefeSnow) {
-
-        // 1) Mover sprite del Snowman según la lógica
-        NivelSnowman *ns = dynamic_cast<NivelSnowman*>(nivel.get());
-        if (ns && snowmanSprite) {
-            Snowman &boss = ns->getSnowman();
-            snowmanSprite->setPos(boss.getX(), boss.getY());
-        }
-
-        // 2) Sincronizar bolas de nieve (parabólicas + oscilantes)
-        sincronizarBolasNieveConNivel();
-
-        // 3) Colisión bolas de nieve con jugador
-        bool golpeNieve = evaluarColisionBolasNieveConJugador();
-        if (golpeNieve) {
-            actualizarBarraVida(jug.getVida());
-        }
-    }
-
-    // Actualizar sprite
-    if (cavermanSprite) {
-        cavermanSprite->setPos(jug.getX(), jug.getY());
-    }
-
-
-    // Posicionar barra de vida en la pantalla ---
-    if (barraVidaItem) {
-        QPointF esquina = ui->graphicsView->mapToScene(0, 0);
-        float margenX = 40.0;
-        float margenY = 40.0;
-        barraVidaItem->setPos(esquina.x() + margenX,esquina.y() + margenY);
-    }
-
-
-    // Verificar CAMBIO DE NIVEL ---
-    if (nivel->estaCompletado()) {
-        cambiarAlSiguienteNivel();
-    }
-    else if (nivel->estaFallido()) {
-        // Aquí puedes reiniciar el mismo nivel, mostrar "Game Over", etc.
-        // cargarNivel(tipoNivelActual);
-    }
 }
-void MainWindow::actualizarTiempo()
+
+void MainWindow::iniciarNivel(TipoNivel tipo)
 {
-    // 1) Cronómetro global del juego
-    segundosJuego++;
-    if (ui->lblTiempoJuego) {
-        ui->lblTiempoJuego->setText(
-            QString("Tiempo: %1 s").arg(segundosJuego)
-            );
+    estadoJuego = EstadoJuego::EnNivel;
+
+    // Ocultar botones del menú
+    ui->pushButtonVolcan->hide();
+    ui->pushButtonMamut->hide();
+    ui->pushButtonSnow->hide();
+
+    // Volver visibles los labels del juego
+    if (ui->lblTiempoJuego)       ui->lblTiempoJuego->setVisible(true);
+    if (ui->lblTemporizadorNivel) ui->lblTemporizadorNivel->setVisible(true);
+
+    // Añadir sprite del jugador si no está ya en la escena
+    if (cavermanSprite && !cavermanSprite->scene()) {
+        scene->addItem(cavermanSprite);
+        cavermanSprite->setScale(2.2);
+        cavermanSprite->setZValue(10);
     }
 
-    // 2) Temporizador del nivel actual
-    if (duracionNivel > 0 && segundosRestantesNivel > 0) {
-        segundosRestantesNivel--;
-
-        ui->lblTemporizadorNivel->setText(
-            QString("Restante: %1 s").arg(segundosRestantesNivel)
-            );
-
-        // TRIGGER: cuando se acaba el tiempo DEL VOLCÁN
-        if (segundosRestantesNivel == 0 &&
-            tipoNivelActual == TipoNivel::Volcan)
-        {
-            // pasamos al siguiente nivel
-            cambiarAlSiguienteNivel();
+    // Barra de vida: si aún no se ha creado, la creamos
+    if (!barraVidaItem) {
+        barraVidaSheet.load(":/recursos_juego/corazones.PNG");
+        if (barraVidaSheet.isNull()) {
+            qDebug() << "ERROR: no se pudo cargar corazones.png";
+        } else {
+            vidaFrameAncho = barraVidaSheet.width();
+            vidaFrameAlto  = barraVidaSheet.height() / 6;
+            QPixmap frame = barraVidaSheet.copy(0, 0,
+                                                vidaFrameAncho,
+                                                vidaFrameAlto);
+            barraVidaItem = scene->addPixmap(frame);
+            barraVidaItem->setZValue(100);
+            barraVidaItem->setScale(0.4);
+            barraVidaItem->setFlag(QGraphicsItem::ItemIgnoresTransformations);
         }
+    } else if (!barraVidaItem->scene()) {
+        // si ya existe pero no está en la escena, volverlo a agregar
+        scene->addItem(barraVidaItem);
     }
-}
-void MainWindow::actualizarBarraVida(int vida)
-{
-    if (!barraVidaItem) return;
-    if (barraVidaSheet.isNull()) return;
 
-    if (vida < 0) vida = 0;
-    if (vida > 100) vida = 100;
+    // Cargar la lógica y el fondo del nivel
+    cargarNivel(tipo);
 
-    int perdida = 100 - vida;           // 0,20,40,60,80,100
-    int fila = perdida / 20;            // 0,1,2,3,4,5
+    // Crear/arrancar timerJuego
+    if (!timerJuego) {
+        timerJuego = new QTimer(this);
+        connect(timerJuego, &QTimer::timeout,
+                this, &MainWindow::actualizarJuego);
+    }
+    timerJuego->start(16);
 
-    if (fila < 0) fila = 0;
-    if (fila > 5) fila = 5;
+    // Crear/arrancar timerTiempo
+    if (!timerTiempo) {
+        timerTiempo = new QTimer(this);
+        connect(timerTiempo, &QTimer::timeout,
+                this, &MainWindow::actualizarTiempo);
+    }
+    timerTiempo->start(1000);
 
-    int srcX = 0;
-    int srcY = fila * vidaFrameAlto;    // 0,100,200,300,400,500
-
-    QPixmap frame = barraVidaSheet.copy(srcX, srcY,vidaFrameAncho,vidaFrameAlto);
-
-    // Borrar la anterior y poner nueva
-    barraVidaItem->setPixmap(frame);
+    // Reiniciar contadores si quieres
+    segundosJuego = 0;
 }
 
 //Opciones de nivel
@@ -368,7 +178,7 @@ void MainWindow::cambiarAlSiguienteNivel()
 void MainWindow::cargarNivel(TipoNivel tipo)
 {
     limpiarSpritesNivel();
-    //scene->clear();
+
     // Crear el nuevo nivel lógico
     switch (tipo) {
     case TipoNivel::Volcan:
@@ -411,7 +221,7 @@ void MainWindow::cargarNivel(TipoNivel tipo)
         // Crear soga gráfica
         if (sogaItem == nullptr) {
             sogaItem = new QGraphicsLineItem();
-            QPen pen(Qt::darkGray, 4);
+            QPen pen(Qt::darkGreen, 4);
             sogaItem->setPen(pen);
             sogaItem->setZValue(8);
             scene->addItem(sogaItem);
@@ -504,36 +314,341 @@ void MainWindow::limpiarSpritesNivel()
     lanzasSprites.clear();
 }
 
+
+//Teclado para el caverman
+void MainWindow::keyPressEvent(QKeyEvent *event)
+{
+    if (event->isAutoRepeat()&& event->key() != Qt::Key_X) {
+        event->ignore();
+        return;
+    }
+
+    bool teclaMovimiento = false;
+    caverman &jug = nivel->getJugador();
+
+    if (tipoNivelActual == TipoNivel::Mamut &&
+        event->key() == Qt::Key_X) {
+
+        NivelMamut *nm = dynamic_cast<NivelMamut*>(nivel.get());
+        if (nm) {
+            nm->intentarAgarrarSoga();
+        }
+        return;
+    }
+    //Izquierda
+    if (event->key() == Qt::Key_A) {
+        moviendoIzquierda = true;
+        teclaMovimiento = true;
+        if (cavermanSprite)
+            cavermanSprite->setDireccion(sprite::Direccion::Izquierda);
+
+    }
+    //Derecha
+    else if (event->key() == Qt::Key_D) {
+        moviendoDerecha = true;
+        teclaMovimiento = true;
+        if (cavermanSprite)
+            cavermanSprite->setDireccion(sprite::Direccion::Derecha);
+
+    }
+    //Saltar
+    else if (event->key() == Qt::Key_W) {
+        jug.iniciarSalto();
+
+        if (cavermanSprite) {
+            cavermanSprite->setEstado(sprite::Estado::Saltar);
+        }
+        return;
+
+    }
+    //Lanzar lanzas
+    else if (event->key() == Qt::Key_Space) {
+        float dirX = 1.0;
+        if (cavermanSprite &&
+            cavermanSprite->getDireccion() == sprite::Direccion::Izquierda) {
+            dirX = -1.0f;
+        }
+
+        NivelMamut *nivelMamut = dynamic_cast<NivelMamut*>(nivel.get());
+        if (nivelMamut != nullptr) {
+            nivelMamut->lanzarDesdeJugador(dirX);
+        }
+
+        return;
+
+    }
+    else {
+        QMainWindow::keyPressEvent(event);
+        return;
+    }
+
+    //Caminar
+    if (teclaMovimiento && cavermanSprite) {
+        cavermanSprite->setEstado(sprite::Estado::Caminar);
+    }
+}
+void MainWindow::keyReleaseEvent(QKeyEvent *event)
+{
+    if (estadoJuego == EstadoJuego::EnMenu || !nivel) {
+        QMainWindow::keyPressEvent(event);
+        return;
+    }
+    if (tipoNivelActual == TipoNivel::Mamut &&
+        event->key() == Qt::Key_X) {
+
+        NivelMamut *nm = dynamic_cast<NivelMamut*>(nivel.get());
+        if (nm) {
+            nm->soltarSoga();
+        }
+        return;
+    }
+    if (event->isAutoRepeat()) {
+        event->ignore();
+        return;
+    }
+    if (event->key() == Qt::Key_A) {
+        moviendoIzquierda = false;
+    }
+    else if (event->key() == Qt::Key_D) {
+        moviendoDerecha = false;
+    }
+
+    if (!moviendoIzquierda && !moviendoDerecha)
+    {
+        if (cavermanSprite)
+            cavermanSprite->setEstado(sprite::Estado::Quieto);
+    }
+
+    QMainWindow::keyReleaseEvent(event);
+}
+
+
+//Actualizar juego y tiempo
+void MainWindow::actualizarJuego()
+{
+    if (!nivel) return;
+    float dt = 0.016;
+
+    nivel->actualizar(dt);
+
+    caverman &jug = nivel->getJugador();
+
+    float x = jug.getX();
+    float paso = 2.5;
+
+    if (moviendoIzquierda) x -= paso;
+    if (moviendoDerecha)   x += paso;
+
+    // Movimiento en x
+    jug.setPos(x, jug.getY());
+
+    // Actualizar salto
+    jug.actualizarSalto(dt);
+
+    // Limitar a la escena
+    QRectF limites = scene->sceneRect();
+    if (jug.getX() < limites.left())  jug.setPos(limites.left(), jug.getY());
+    if (jug.getX() > limites.right()) jug.setPos(limites.right(), jug.getY());
+    if (jug.getY() < limites.top())   jug.setPos(jug.getX(), limites.top());
+    if (jug.getY() > limites.bottom())jug.setPos(jug.getX(), limites.bottom());
+
+    //Nivel mamut
+    if (tipoNivelActual == TipoNivel::Mamut && mamutSprite &&sogaItem) {
+        //Centrar al jugador
+        ui->graphicsView->centerOn(cavermanSprite);
+
+        NivelMamut* nivelMamut = static_cast<NivelMamut*>(nivel.get());
+        mamut &boss = nivelMamut->getMamut();
+
+        //Posicion mamut
+        mamutSprite->setPos(boss.getX(), boss.getY());
+
+        //Para la soga del nivel, obtener posiciones
+        QPointF ancla(nivelMamut->getSogaXAncla(), nivelMamut->getSogaYAncla());
+        QPointF extremo(nivelMamut->getSogaXExtremo(), nivelMamut->getSogaYExtremo());
+        sogaItem->setLine(QLineF(ancla, extremo));
+        sogaItem->setVisible(true);
+
+        // Actualizar dirección según velocidad del mamut
+        if (boss.getVelX() < 0) {
+            mamutSprite->setDireccion(sprite::Direccion::Izquierda);
+        }
+        else if (boss.getVelX() > 0) {
+            mamutSprite->setDireccion(sprite::Direccion::Derecha);
+        }
+        //Lanzas con mamut
+        sincronizarLanzasConNivel();
+        bool huboImpactoLanzas = evaluarColisionLanzasConMamut();
+        if (huboImpactoLanzas) {
+            qDebug() << "[Mamut] Recibió impacto de lanza. Vida:"
+                     << static_cast<NivelMamut*>(nivel.get())->getMamut().getVida();
+        }
+        //Mamut con jugador
+        bool huboColisionMamut = evaluarColisionMamutConJugador();
+        if (huboColisionMamut) {
+            qDebug() << "[Jugador] Golpeado por mamut. Vida:"
+                    << nivel->getJugador().getVida();
+        }
+        if(nivel->getJugador().getVida()==0){
+            qDebug() << "El caverman murió";
+
+        }
+        if (static_cast<NivelMamut*>(nivel.get())->getMamut().getVida()==0){
+            qDebug() << "El mamut murió";
+        }
+
+    }
+
+    if (tipoNivelActual == TipoNivel::Volcan) {
+        // Sincronizar las bolas de fuego lógicas con los sprites gráficos
+        sincronizarBolasConNivel();
+        bool huboColision = evaluarColisionBolasConJugador();
+        if (huboColision) {
+            qDebug() << "El caverman recibió un golpe. Vida:" << nivel->getJugador().getVida();
+            actualizarBarraVida(jug.getVida());
+        }
+        if(nivel->getJugador().getVida()==0){
+            qDebug() << "El caverman murió";
+        }
+    }
+    if (tipoNivelActual == TipoNivel::JefeSnow) {
+
+        // 1) Mover sprite del Snowman según la lógica
+        NivelSnowman *ns = static_cast<NivelSnowman*>(nivel.get());
+        if (ns && snowmanSprite) {
+            Snowman &boss = ns->getSnowman();
+            snowmanSprite->setPos(boss.getX(), boss.getY());
+        }
+
+        // 2) Sincronizar bolas de nieve (parabólicas + oscilantes)
+        sincronizarBolasNieveConNivel();
+
+        // 3) Colisión bolas de nieve con jugador
+        bool golpeNieve = evaluarColisionBolasNieveConJugador();
+        if (golpeNieve) {
+            actualizarBarraVida(jug.getVida());
+        }
+
+        //Muerte del jugador
+        if(nivel->getJugador().getVida()==0){
+            qDebug() << "El caverman murió";
+        }
+        if (static_cast<NivelSnowman*>(nivel.get())->getSnowman().getVida()==0){
+            qDebug() << "El snowman murió";
+        }
+
+    }
+
+    // Actualizar sprite
+    if (cavermanSprite) {
+        cavermanSprite->setPos(jug.getX(), jug.getY());
+    }
+
+
+    // Posicionar barra de vida en la pantalla
+    if (barraVidaItem) {
+        QPointF esquina = ui->graphicsView->mapToScene(0, 0);
+        float margenX = 40.0;
+        float margenY = 40.0;
+        barraVidaItem->setPos(esquina.x() + margenX,esquina.y() + margenY);
+    }
+
+
+    // Verificar CAMBIO DE NIVEL ---
+    if (nivel->estaCompletado()) {
+        cambiarAlSiguienteNivel();
+    }
+    else if (nivel->estaFallido()) {
+        // Aquí puedes reiniciar el mismo nivel, mostrar "Game Over", etc.
+        // cargarNivel(tipoNivelActual);
+    }
+}
+void MainWindow::actualizarTiempo()
+{
+    // 1) Cronómetro global del juego
+    segundosJuego++;
+    if (ui->lblTiempoJuego) {
+        ui->lblTiempoJuego->setText(
+            QString("Tiempo: %1 s").arg(segundosJuego)
+            );
+    }
+
+    // 2) Temporizador del nivel actual
+    if (duracionNivel > 0 && segundosRestantesNivel > 0) {
+        segundosRestantesNivel--;
+
+        ui->lblTemporizadorNivel->setText(
+            QString("Restante: %1 s").arg(segundosRestantesNivel)
+            );
+
+        // TRIGGER: cuando se acaba el tiempo DEL VOLCÁN
+        if (segundosRestantesNivel == 0 &&
+            tipoNivelActual == TipoNivel::Volcan)
+        {
+            // pasamos al siguiente nivel
+            cambiarAlSiguienteNivel();
+        }
+    }
+}
+
+void MainWindow::actualizarBarraVida(int vida)
+{
+    if (!barraVidaItem) return;
+    if (barraVidaSheet.isNull()) return;
+
+    if (vida < 0) vida = 0;
+    if (vida > 100) vida = 100;
+
+    int perdida = 100 - vida;
+    int fila = perdida / 20;
+
+    if (fila < 0) fila = 0;
+    if (fila > 5) fila = 5;
+
+    int srcX = 0;
+    int srcY = fila * vidaFrameAlto;
+
+    QPixmap frame = barraVidaSheet.copy(srcX, srcY,vidaFrameAncho,vidaFrameAlto);
+
+    // Borrar la anterior y poner nueva
+    barraVidaItem->setPixmap(frame);
+}
+
 //colisiones
 bool MainWindow::evaluarColisionBolasConJugador()
 {
+    if (tipoNivelActual != TipoNivel::Volcan) return false;
     if (!cavermanSprite) return false;
-
-    NivelSnowman *ns = dynamic_cast<NivelSnowman*>(nivel.get());
-    if (!ns) return false;
+    if (!nivel) return false;
 
     bool huboColision = false;
 
-    for (size_t i = 0; i < bolasNieveSprites.size(); ++i) {
+    const vector<proyectil*> &rocas = nivel->getProyectilesEnemigos();
 
-        if (cavermanSprite->collidesWithItem(bolasNieveSprites[i])) {
+    size_t limite = min(bolasSprites.size(), rocas.size());
 
-            huboColision = true;
+    for (size_t i = 0; i < limite; ++i) {
+        QGraphicsPixmapItem *bolaItem = bolasSprites[i];
+        if (!bolaItem) continue;
 
-            // 1) Eliminar bola lógica en el nivel
-            ns->eliminarBolaPorIndice(i);
+        if (cavermanSprite->collidesWithItem(bolaItem)) {
 
-            // 2) Eliminar sprite gráfico correspondiente
-            scene->removeItem(bolasNieveSprites[i]);
-            delete bolasNieveSprites[i];
-            bolasNieveSprites.erase(bolasNieveSprites.begin() + i);
-
-            // 3) Aplicar daño al jugador (por ejemplo 10)
             caverman &jug = nivel->getJugador();
             jug.recibirDanio(10);
             cavermanSprite->mostrarDanio();
 
-            // solo un golpe por frame
+            actualizarBarraVida(jug.getVida());
+
+            // Borrar sprite de la bola
+            scene->removeItem(bolaItem);
+            delete bolaItem;
+            bolasSprites.erase(bolasSprites.begin() + i);
+
+            // Borrar también la roca lógica en el mismo índice
+            if (auto nv = dynamic_cast<NivelVolcan*>(nivel.get())) {
+                nv->eliminarRocaEnIndice((i));
+            }
+            huboColision = true;
             break;
         }
     }
@@ -548,7 +663,7 @@ bool MainWindow::evaluarColisionMamutConJugador()
 
     bool colision = false;
 
-    // Detectar colisión gráfica
+    // Detectar colisión
     if (cavermanSprite->collidesWithItem(mamutSprite))
     {
         colision = true;
@@ -568,7 +683,6 @@ bool MainWindow::evaluarColisionMamutConJugador()
 }
 bool MainWindow::evaluarColisionLanzasConMamut()
 {
-    // Solo tiene sentido en el nivel Mamut y si existe el sprite del mamut
     if (tipoNivelActual != TipoNivel::Mamut || mamutSprite == nullptr) {
         return false;
     }
@@ -578,7 +692,7 @@ bool MainWindow::evaluarColisionLanzasConMamut()
         return false;
     }
 
-    const std::vector<proyectil*> &lanzasLogicas = nivelMamut->getProyectilesJugador();
+    const vector<proyectil*> &lanzasLogicas = nivelMamut->getProyectilesJugador();
     bool huboImpacto = false;
 
     int i = 0;
@@ -586,7 +700,6 @@ bool MainWindow::evaluarColisionLanzasConMamut()
 
         QGraphicsPixmapItem *lanzaItem = lanzasSprites[i];
 
-        // ¿Colisiona el sprite de la lanza con el sprite del mamut?
         if (lanzaItem->collidesWithItem(mamutSprite)) {
             huboImpacto = true;
 
@@ -596,25 +709,21 @@ bool MainWindow::evaluarColisionLanzasConMamut()
             mamut &boss = nivelMamut->getMamut();
             boss.recibirDanio(danio);
 
-            // 🔹 Cambiar sprite del mamut según su vida
+            // Cambiar sprite del mamut según su vida
             if (boss.getVida() <= 0) {
-                // Mamut muerto → sprite final
                 mamutSprite->matarMamut();
+                boss.setVel(0, 0);
 
-                // Opcional: aquí puedes parar su movimiento lógico
-                // boss.setVel(0, 0);
-                // yad marcar el nivel como completado en NivelMamut
             } else {
-                // Mamut herido → sprite de daño un momento
                 mamutSprite->mostrarDanioMamut();
             }
 
-            // 3) Borrar sprite de la lanza
+            // Borrar sprite de la lanza
             scene->removeItem(lanzaItem);
             delete lanzaItem;
             lanzasSprites.erase(lanzasSprites.begin() + i);
 
-            // 4) Borrar la lanza lógica en el mismo índice
+            // Borrar la lanza lógica en el mismo índice
             nivelMamut->eliminarLanzaEnIndice(i);
 
             continue;
@@ -628,28 +737,32 @@ bool MainWindow::evaluarColisionLanzasConMamut()
 }
 bool MainWindow::evaluarColisionBolasNieveConJugador()
 {
-    if (!cavermanSprite) return false;
+    if (tipoNivelActual != TipoNivel::JefeSnow) return false;
+    if (!cavermanSprite || !nivel) return false;
+
+    NivelSnowman *ns = dynamic_cast<NivelSnowman*>(nivel.get());
+    if (!ns) return false;
 
     bool huboColision = false;
 
     for (size_t i = 0; i < bolasNieveSprites.size(); ++i) {
         if (cavermanSprite->collidesWithItem(bolasNieveSprites[i])) {
 
-            // 1) eliminar proyectil lógico
-            NivelSnowman *ns = dynamic_cast<NivelSnowman*>(nivel.get());
-            //if (ns) {
-              //  ns->eliminarBolaPorIndice(i); // implementa esto en el nivel
-            //}
+            // 1) eliminar proyectil lógico EN EL NIVEL
+            ns->eliminarBolaPorIndice(i);  // asegúrate de tener este método implementado
 
             // 2) eliminar sprite gráfico
             scene->removeItem(bolasNieveSprites[i]);
             delete bolasNieveSprites[i];
             bolasNieveSprites.erase(bolasNieveSprites.begin() + i);
 
-            // 3) aplicar daño al jugador
+            // 3) aplicar daño al jugador (daño pequeño)
             caverman &jug = nivel->getJugador();
-            jug.recibirDanio(10);          // o el valor que quieras
+            jug.recibirDanio(10);
             cavermanSprite->mostrarDanio();
+
+            // 4) actualizar barra de vida
+            actualizarBarraVida(jug.getVida());
 
             huboColision = true;
             break; // solo 1 golpe por frame
@@ -658,6 +771,7 @@ bool MainWindow::evaluarColisionBolasNieveConJugador()
 
     return huboColision;
 }
+
 
 //sincronizacion acciones
 void MainWindow::sincronizarBolasConNivel()
@@ -787,4 +901,23 @@ void MainWindow::sincronizarBolasNieveConNivel()
         bolasNieveSprites[k]->setPos(b.x, b.y);
         ++k;
     }
+}
+
+
+// Nivel Volcán
+void MainWindow::on_pushButtonVolcan_clicked()
+{
+    iniciarNivel(TipoNivel::Volcan);
+}
+
+// Nivel Mamut
+void MainWindow::on_pushButtonMamut_clicked()
+{
+    iniciarNivel(TipoNivel::Mamut);
+}
+
+// Nivel Snowman
+void MainWindow::on_pushButtonSnow_clicked()
+{
+    iniciarNivel(TipoNivel::JefeSnow);
 }

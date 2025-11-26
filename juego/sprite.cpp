@@ -72,9 +72,10 @@ sprite::sprite(QObject *parent, Tipo tipo)
     connect(timerDanio, SIGNAL(timeout()),this, SLOT(finDanio()));
 }
 
-sprite::Direccion sprite::getDireccion() const { return dir; }
+sprite::Direccion sprite::getDireccion() const {
+    return dir; }
 
-//Modos para cuando recibe daño
+//Modos para cuando recibe daño humano
 void sprite::mostrarDanio()
 {
     // guardar en qué estábamos (Quieto, Caminar, Saltar)
@@ -85,7 +86,7 @@ void sprite::mostrarDanio()
 
 
     // arrancar temporizador de 200 ms
-    timerDanio->start(100);
+    timerDanio->start(50);
 }
 void sprite::finDanio()
 {
@@ -100,6 +101,7 @@ void sprite::finDanio()
         }
     }
 }
+//Modos para cuando recibe daño mamut
 void sprite::mostrarDanioMamut()
 {
 
@@ -109,9 +111,9 @@ void sprite::mostrarDanioMamut()
 
     estadoMamut = EstadoMamut::Danio;
     columnas_mamut = 0;
-    timerDanio->start(800);       // tiempo de impacto
+    timerDanio->start(200);       // tiempo de impacto
 }
-//Modo muerto del mamut
+
 void sprite::matarMamut()
 {
     if (tipoSprite != Tipo::Mamut) {
@@ -120,6 +122,7 @@ void sprite::matarMamut()
 
     estadoMamut = EstadoMamut::Muerto;
     columnas_mamut = 0;
+    timerDanio->start(200);
 
 }
 
@@ -144,7 +147,7 @@ void sprite::Actualizacion()
         }
         else if (estado == Estado::Caminar) {
             columnas += ancho;
-            if (columnas >= 343) {   // ancho total de tu spritesheet
+            if (columnas >= 343) {
                 columnas = 0;
             }
         }

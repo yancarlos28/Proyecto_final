@@ -8,9 +8,10 @@
 class Nivel
 {
 public:
-    virtual ~Nivel() = default;
 
+    virtual ~Nivel();
 
+    // Actualización lógica
     virtual void actualizar(float dt) = 0;
     virtual bool estaCompletado() const { return false; }
     virtual bool estaFallido() const { return false; }
@@ -19,11 +20,20 @@ public:
     caverman& getJugador();
     const caverman& getJugador() const;
 
-    //metodo para proyectiles
+    // Proyectiles: se separan los del jugador y los enemigos
+    const std::vector<proyectil*>& getProyectilesJugador() const;
+    const std::vector<proyectil*>& getProyectilesEnemigos() const;
+
+    // Método genérico (compatibilidad): devuelve proyectiles de enemigos
     virtual const std::vector<proyectil*>& getProyectiles() const;
 
 protected:
+
     caverman jugador;
+
+    // Listas comunes a todos los niveles
+    std::vector<proyectil*> proyectilesJugador;
+    std::vector<proyectil*> proyectilesEnemigos;
 };
 
 #endif // NIVEL_H

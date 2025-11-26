@@ -41,11 +41,24 @@ private slots:
 
    void actualizarJuego();
    void actualizarTiempo();
+   void mostrarMenu();
+
+   //void on_pushButtonVolcan();
+   //void on_pushButtonMamut();
+   //void on_pushButtonSnow();
+
+   void on_pushButtonVolcan_clicked();
+
+   void on_pushButtonMamut_clicked();
+
+   void on_pushButtonSnow_clicked();
 
 private:
 
     Ui::MainWindow *ui;
     QGraphicsScene *scene;
+    enum class EstadoJuego { EnMenu, EnNivel };
+    EstadoJuego estadoJuego = EstadoJuego::EnMenu;
 
     //logica del nivel
     std::unique_ptr<Nivel> nivel;
@@ -63,8 +76,8 @@ private:
     bool moviendoDerecha = false;
 
     //Tiempos
-    QTimer *timerJuego;
-    QTimer *timerTiempo;
+    QTimer *timerJuego=nullptr;
+    QTimer *timerTiempo=nullptr;
     // Contadores de tiempo ---
     int segundosJuego = 0;
     int duracionNivel = 0;
@@ -72,7 +85,6 @@ private:
 
     //elementos de escena
     void actualizarBarraVida(int vida);
-
     // === Barra de vida ===
     QGraphicsPixmapItem *barraVidaItem = nullptr;
     QPixmap barraVidaSheet;
@@ -103,6 +115,9 @@ private:
     std::vector<QGraphicsPixmapItem*> bolasNieveSprites;
     void sincronizarBolasNieveConNivel();
     bool evaluarColisionBolasNieveConJugador();
+
+    void irAlMenu();
+    void iniciarNivel(TipoNivel tipo);
 
 
 
