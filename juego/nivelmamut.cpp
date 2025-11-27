@@ -12,18 +12,22 @@ NivelMamut::NivelMamut()
     anchoMundo = 3000;
 
     // Ruta específica del mamut a lo largo del nivel
-    vector<float> ruta = { 400, 600, 1000, 1400};
+    vector<float> ruta = {400, 600, 1000, 1400};
     jefeMamut.setRuta(ruta);
 
+    //Modelo de movimiento de la lanza y tiempo que se genera
     ModeloMovimiento* modeloLanza = new ModeloMovimiento(340);
     armaJugador = new Arma(20, 700, modeloLanza);
-
+    municionJugador = 0;
+    tiempoFlechas = 0.0;
+    intervaloFlechas=3.0;
 
     // --- Configurar soga ---
     float xAncla = 800.0;
     float yAncla = 20.0;
     float longitud =600.0;
 
+    //Movimiento de la soga en "péndulo"
     movimientoSoga.configurar(xAncla, yAncla, longitud);
 
     // amplitud en radianes, velocidad en rad/s
@@ -35,14 +39,12 @@ NivelMamut::NivelMamut()
 
     jugadorColgado = false;
 
-    // --- CAÍDA ---
+    // La caída del caverman en la cuerda
     pisoY = jugador.getY();
-    velCaida = 0.0f;
+    velCaida = 0.0;
 
-    municionJugador = 0;
-    tiempoFlechas = 0.0;
 }
-
+//Destructor
 NivelMamut::~NivelMamut()
 {
     /*for (proyectil* p : proyectilesJugador) {
@@ -52,27 +54,30 @@ NivelMamut::~NivelMamut()
 
     delete armaJugador; //Nivel ya lo hace
 }
+
 //Lanza
 void NivelMamut::lanzarDesdeJugador(float dirX)
 {
     if (!armaJugador) return;
-    // Si no hay munición, no lanza
-    /*if (municionJugador <= 0) {
+
+    // Si no hay munición, NO lanza
+    if (municionJugador <= 0) {
         qDebug() << "[Mamut] Sin lanzas, recoge flechas!";
         return;
-    }*/
+    }
+
+    // consumimos una lanza
+    municionJugador--;
+
     // Normalizar signo
-    float dx = (dirX >= 0.0) ? 1.0 : -1.0;
-    // un poco hacia arriba
-    float dy = -0.6;
+    float dx = (dirX >= 0.0f) ? 1.0f : -1.0f;
+    float dy = -0.6f;
 
     float x = jugador.getX();
-    //salga del jugador
-    float y = jugador.getY() - 30.;
+    float y = jugador.getY() - 30.0f;
 
     proyectil* p = armaJugador->crearProyectil(x, y, dx, dy);
     proyectilesJugador.push_back(p);
-    municionJugador--;
 }
 void NivelMamut::GenerarFlechaDesdeArriba()
 {
@@ -92,7 +97,6 @@ void NivelMamut::GenerarFlechaDesdeArriba()
 
     proyectilesEnemigos.push_back(p);
 }
-
 void NivelMamut::eliminarLanzaEnIndice(int indice)
 {
 
@@ -104,35 +108,67 @@ void NivelMamut::eliminarLanzaEnIndice(int indice)
     proyectilesJugador.erase(proyectilesJugador.begin() + indice);
 
 }
+void NivelMamut::recogerFlechaPorIndice(int indice)
+{
+    if (indice < 0 || indice >= static_cast<int>(proyectilesEnemigos.size()))
+        return;
 
-//Actualizar
+    proyectil* p = proyectilesEnemigos[indice];
+    if (!p) return;
+
+    // Aumentar munición del jugador
+    municionJugador+=3;
+    qDebug() << "[Mamut] Flecha recogida. Munición =" << municionJugador;
+
+    delete p;
+    proyectilesEnemigos.erase(proyectilesEnemigos.begin() + indice);
+}
+
+void NivelMamut::actualizarFlechas(float dt)
+{
+    int i = 0;
+    while (i < static_cast<int>(proyectilesEnemigos.size())) {
+        proyectil* p = proyectilesEnemigos[i];
+        if (!p) { ++i; continue; }
+
+        p->actualizar(dt);
+
+        // si sale de la pantalla, la destruimos
+        if (p->debeDestruirse()) {
+            delete p;
+            proyectilesEnemigos.erase(proyectilesEnemigos.begin() + i);
+        } else {
+            ++i;
+        }
+    }
+}
+
+//Actualizar nivel/soga/flechas
 void NivelMamut::actualizar(float dt)
 {
     // 1) Movimiento / IA del mamut
     jefeMamut.actuar(dt);
 
-    // 2) Actualizar soga (se mueve sola siempre)
+    // 2) Soga
     actualizarSoga(dt);
 
-    // 3) Movimiento del jugador
+    // 3) Movimiento del jugador (caída)
     if (!jugadorColgado) {
         float x = jugador.getX();
         float y = jugador.getY();
 
-        // Si está por encima del piso, aplicamos gravedad
         if (y < pisoY) {
-            float g = 800.0f;  // misma gravedad que usas en el salto
+            float g = 800.0f;
             velCaida += g * dt;
             y += velCaida * dt;
 
             if (y >= pisoY) {
                 y = pisoY;
-                velCaida = 0.0f; // llegó al suelo
+                velCaida = 0.0f;
             }
 
             jugador.setPos(x, y);
         } else {
-            // Aseguramos que se quede pisando el suelo
             velCaida = 0.0f;
             jugador.setPos(x, pisoY);
         }
@@ -143,31 +179,18 @@ void NivelMamut::actualizar(float dt)
         p->actualizar(dt);
     }
 
-}
-void NivelMamut::actualizarSoga(float dt)
-{
-    movimientoSoga.actualizar(dt, sogaXExtremo, sogaYExtremo);
-
-    if (jugadorColgado) {
-        jugador.setPos(sogaXExtremo, sogaYExtremo);
+    // 5) Generar flechas periódicamente
+    tiempoFlechas += dt;
+    if (tiempoFlechas >= 2.0) {   // o intervaloFlechas si lo usas
+        tiempoFlechas = 0.0;
+        GenerarFlechaDesdeArriba();
     }
+
+    // 6) Actualizar flechas enemigas (las que caen)
+    actualizarFlechas(dt);
+
 }
-/*void NivelMamut::actualizarFlechas(float dt)
-{
-    for (proyectil* p : proyectilesEnemigos) {
-        if (!p) continue;
 
-        // ya se están moviendo con su propio modelo:
-        p->actualizar(dt);
-
-        // Opcional: si quieres que se queden "clavadas" en el suelo
-        float y = p->getY();
-        if (y > pisoY) {
-            p->setPos(p->getX(), pisoY);
-            // aquí podrías frenar su movimiento, según cómo esté implementado proyectil
-        }
-    }
-}*/
 
 //Agarrar y soltar la soga
 void NivelMamut::intentarAgarrarSoga()
@@ -201,3 +224,15 @@ void NivelMamut::soltarSoga()
     // Empezar caída desde donde está
     velCaida = 0.0f;
 }
+void NivelMamut::actualizarSoga(float dt)
+{
+    movimientoSoga.actualizar(dt, sogaXExtremo, sogaYExtremo);
+
+    if (jugadorColgado) {
+        jugador.setPos(sogaXExtremo, sogaYExtremo);
+    }
+}
+
+bool NivelMamut::estaColgado() const { return jugadorColgado; }
+float NivelMamut::getSogaXAncla() const { return movimientoSoga.getXAncla(); }
+int NivelMamut::getMunicionJugador() const { return municionJugador; }

@@ -24,7 +24,9 @@ private:
     float pisoY;      // altura del piso en este nivel (centro del caverman)
 
     int municionJugador = 0;      // cuántas lanzas puede tirar el jugador
-    float tiempoFlechas = 0.0f;   // acumulador para spawnear flechas
+    float tiempoFlechas = 0.0;
+    float intervaloFlechas = 3.0f; // cada 2 segundos cae una flecha
+    float velocidadFlechaY = 10.0f;    // velocidad de caída
 
 public:
 
@@ -45,19 +47,23 @@ public:
 
     // --- SOGA ---
     void actualizarSoga(float dt);
-    bool estaColgado() const { return jugadorColgado; }
-    float getSogaXAncla() const { return movimientoSoga.getXAncla(); }
+    bool estaColgado() const;
+    float getSogaXAncla() const;
     float getSogaYAncla() const { return movimientoSoga.getYAncla(); }
     float getSogaXExtremo() const { return sogaXExtremo; }
     float getSogaYExtremo() const { return sogaYExtremo; }
     void intentarAgarrarSoga();
     void soltarSoga();
 
+    //Flechas caidas del "cielo"
     void GenerarFlechaDesdeArriba();
     void actualizarFlechas(float dt);
-    void recogerFlechas();
+    void recogerFlechaPorIndice(int indice);
+    //Municion
+    int getMunicionJugador() const;
 
-    int getMunicionJugador() const { return municionJugador; }
+
+
 
 
 };

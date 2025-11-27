@@ -36,6 +36,27 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Arrancar en el menú
     irAlMenu();
+
+    QPixmap hudFlecha(":/sprites/lanzas_3.png");  // o la ruta que uses
+
+    QPixmap flechaEscalada = hudFlecha.scaled(
+            ui->lblIconoFlecha->width()-60,
+            ui->lblIconoFlecha->height()-20,
+            Qt::KeepAspectRatio,
+            Qt::SmoothTransformation
+            );
+        ui->lblIconoFlecha->setPixmap(flechaEscalada);
+        ui->lblIconoFlecha->setScaledContents(true); // opcional, por si el tamaño del label cambia
+
+
+
+
+        ui->lblMunicion->setText("0");
+
+        // al inicio estás en menú/otro nivel, los escondes
+        ui->lblMunicion->hide();
+        ui->lblMunicion->hide();
+
 }
 
 
@@ -48,6 +69,8 @@ MainWindow::~MainWindow()
 void MainWindow::irAlMenu()
 {
     estadoJuego = EstadoJuego::EnMenu;
+    ui->lblIconoFlecha->hide();
+    ui->lblMunicion->hide();
 
     // Detener timers
     if (timerJuego) {
@@ -84,9 +107,7 @@ void MainWindow::mostrarMenu()
 
     // Fondo del menú
     QImage img(":/escenas/menu.jpg");
-    QImage imgEscalada = img.scaled(1536, 1024,
-                                    Qt::IgnoreAspectRatio,
-                                    Qt::SmoothTransformation);
+    QImage imgEscalada = img.scaled(1536, 1024,Qt::IgnoreAspectRatio,Qt::SmoothTransformation);
     scene->setBackgroundBrush(QPixmap::fromImage(imgEscalada));
 
     // Ocultar labels de juego mientras estamos en el menú
@@ -197,11 +218,15 @@ void MainWindow::cargarNivel(TipoNivel tipo)
 
     case TipoNivel::Mamut:
     {
+        ui->lblIconoFlecha->show();
+        ui->lblMunicion->show();
+
         nivel = std::make_unique<NivelMamut>();
+        NivelMamut* nivelMamut = static_cast<NivelMamut*>(nivel.get());
         //Central la vista
         ui->graphicsView->centerOn(cavermanSprite);
 
-        NivelMamut* nivelMamut = static_cast<NivelMamut*>(nivel.get());
+
 
         float anchoMundo = nivelMamut->getAnchoMundo();
         scene->setSceneRect(0, 0, anchoMundo, 1024);
@@ -453,51 +478,45 @@ void MainWindow::actualizarJuego()
     if (jug.getY() > limites.bottom())jug.setPos(jug.getX(), limites.bottom());
 
     //Nivel mamut
-    if (tipoNivelActual == TipoNivel::Mamut && mamutSprite &&sogaItem) {
-        //Centrar al jugador
+    // Nivel mamut
+    if (tipoNivelActual == TipoNivel::Mamut && mamutSprite && sogaItem) {
+        // centrar cámara en el jugador
         ui->graphicsView->centerOn(cavermanSprite);
 
         NivelMamut* nivelMamut = static_cast<NivelMamut*>(nivel.get());
         mamut &boss = nivelMamut->getMamut();
 
-        //Posicion mamut
+        // Posición del mamut
         mamutSprite->setPos(boss.getX(), boss.getY());
 
-        //Para la soga del nivel, obtener posiciones
+        // Soga
         QPointF ancla(nivelMamut->getSogaXAncla(), nivelMamut->getSogaYAncla());
         QPointF extremo(nivelMamut->getSogaXExtremo(), nivelMamut->getSogaYExtremo());
         sogaItem->setLine(QLineF(ancla, extremo));
         sogaItem->setVisible(true);
 
-        // Actualizar dirección según velocidad del mamut
+        // Dirección del mamut según velocidad
         if (boss.getVelX() < 0) {
             mamutSprite->setDireccion(sprite::Direccion::Izquierda);
-        }
-        else if (boss.getVelX() > 0) {
+        } else if (boss.getVelX() > 0) {
             mamutSprite->setDireccion(sprite::Direccion::Derecha);
         }
-        //Lanzas con mamut
+
+        // Lanzas del jugador contra el mamut
         sincronizarLanzasConNivel();
-        bool huboImpactoLanzas = evaluarColisionLanzasConMamut();
-        if (huboImpactoLanzas) {
-            qDebug() << "[Mamut] Recibió impacto de lanza. Vida:"
-                     << static_cast<NivelMamut*>(nivel.get())->getMamut().getVida();
-        }
-        //Mamut con jugador
-        bool huboColisionMamut = evaluarColisionMamutConJugador();
-        if (huboColisionMamut) {
-            qDebug() << "[Jugador] Golpeado por mamut. Vida:"
-                    << nivel->getJugador().getVida();
-        }
-        if(nivel->getJugador().getVida()==0){
-            qDebug() << "El caverman murió";
+        evaluarColisionLanzasConMamut();
 
-        }
-        if (static_cast<NivelMamut*>(nivel.get())->getMamut().getVida()==0){
-            qDebug() << "El mamut murió";
-        }
+        // Mamut contra jugador
+        evaluarColisionMamutConJugador();
 
+        //Flechas que caen
+        sincronizarBolasConNivel();
+        evaluarColisionFlechasConJugador();
+
+        //Actualizar lanzas
+        ui->lblMunicion->setText(QString::number(nivelMamut->getMunicionJugador()));
     }
+
 
     if (tipoNivelActual == TipoNivel::Volcan) {
         // Sincronizar las bolas de fuego lógicas con los sprites gráficos
@@ -771,6 +790,43 @@ bool MainWindow::evaluarColisionBolasNieveConJugador()
 
     return huboColision;
 }
+bool MainWindow::evaluarColisionFlechasConJugador()
+{
+    if (tipoNivelActual != TipoNivel::Mamut) return false;
+    if (!cavermanSprite || !nivel) return false;
+
+    NivelMamut *nm = dynamic_cast<NivelMamut*>(nivel.get());
+    if (!nm) return false;
+
+    bool hubo = false;
+
+    for (size_t i = 0; i < bolasSprites.size(); ++i) {
+        QGraphicsPixmapItem *item = bolasSprites[i];
+        if (!item) continue;
+
+        if (cavermanSprite->collidesWithItem(item)) {
+
+            // 1) decírselo al nivel por índice
+            nm->recogerFlechaPorIndice(static_cast<int>(i));
+
+            // 2) quitar el sprite de la escena
+            scene->removeItem(item);
+            delete item;
+            bolasSprites.erase(bolasSprites.begin() + i);
+
+            // (opcional) refrescar contador en el label
+            ui->lblMunicion->setText(
+                QString::number(nm->getMunicionJugador())
+                );
+
+            hubo = true;
+            break; // sólo una por frame
+        }
+    }
+
+    return hubo;
+}
+
 
 
 //sincronizacion acciones
@@ -787,11 +843,20 @@ void MainWindow::sincronizarBolasConNivel()
         bolasSprites.pop_back();
     }
 
-    QPixmap bolaPixmap(":/sprites/bola_fuego.png");
+    QPixmap bolaPixmap(
+        (tipoNivelActual == TipoNivel::Volcan)
+            ? QPixmap(":/sprites/bola_fuego.png")
+            : QPixmap(":/sprites/lanzas_3.png")
+        );
     while (bolasSprites.size() < rocas.size()) {
         QGraphicsPixmapItem* item = scene->addPixmap(bolaPixmap);
         item->setZValue(5);
-        item->setScale(0.4);
+
+        if (tipoNivelActual == TipoNivel::Volcan)
+            item->setScale(0.4);
+        else
+            item->setScale(0.4);
+
         bolasSprites.push_back(item);
     }
 

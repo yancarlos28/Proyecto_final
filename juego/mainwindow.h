@@ -42,15 +42,8 @@ private slots:
    void actualizarJuego();
    void actualizarTiempo();
    void mostrarMenu();
-
-   //void on_pushButtonVolcan();
-   //void on_pushButtonMamut();
-   //void on_pushButtonSnow();
-
    void on_pushButtonVolcan_clicked();
-
    void on_pushButtonMamut_clicked();
-
    void on_pushButtonSnow_clicked();
 
 private:
@@ -68,7 +61,6 @@ private:
     sprite *mamutSprite;
     sprite *snowmanSprite=nullptr;
 
-
     //movimientos de teclado para personaje principal
     bool moviendoArriba = false;
     bool moviendoAbajo = false;
@@ -85,11 +77,17 @@ private:
 
     //elementos de escena
     void actualizarBarraVida(int vida);
-    // === Barra de vida ===
+    // Barra de vida de persona y de enemigo
     QGraphicsPixmapItem *barraVidaItem = nullptr;
     QPixmap barraVidaSheet;
     int vidaFrameAncho = 0;
     int vidaFrameAlto  = 0;
+
+    QGraphicsPixmapItem *barraVidaEnemigo= nullptr;
+    //QPixmap barraVidaSheet;
+    //int vidaFracmentoAncho = 0;
+    //int vidaFracmentoAlto  = 0;
+
 
     //Niveles
     enum class TipoNivel { Volcan, Mamut, JefeSnow };
@@ -108,6 +106,8 @@ private:
     void sincronizarLanzasConNivel();
     bool evaluarColisionLanzasConMamut();
     bool evaluarColisionMamutConJugador();
+    bool evaluarColisionFlechasConJugador();
+
     //Soga
     QGraphicsLineItem *sogaItem = nullptr;
 
