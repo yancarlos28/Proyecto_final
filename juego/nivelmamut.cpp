@@ -16,8 +16,8 @@ NivelMamut::NivelMamut()
     jefeMamut.setRuta(ruta);
 
     //Modelo de movimiento de la lanza y tiempo que se genera
-    ModeloMovimiento* modeloLanza = new ModeloMovimiento(340);
-    armaJugador = new Arma(20, 700, modeloLanza);
+    ModeloMovimiento* modeloLanza = new ModeloMovimiento(700);
+    armaJugador = new Arma(20, 800, modeloLanza);
     municionJugador = 0;
     tiempoFlechas = 0.0;
     intervaloFlechas=3.0;
@@ -70,8 +70,8 @@ void NivelMamut::lanzarDesdeJugador(float dirX)
     municionJugador--;
 
     // Normalizar signo
-    float dx = (dirX >= 0.0f) ? 1.0f : -1.0f;
-    float dy = -0.6f;
+    float dx = (dirX >= 0.0f) ? 1.0 : -1.0;
+    float dy = -1;
 
     float x = jugador.getX();
     float y = jugador.getY() - 30.0f;

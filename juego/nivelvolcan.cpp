@@ -2,19 +2,28 @@
 #include "modelomovimiento.h"
 #include <QDebug>
 
+float NivelVolcan::generarNumeroaleatorio(float min, float max){
+    float r = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+    float numero= min + r *(max-min);
+    return numero;
+}
 NivelVolcan::NivelVolcan()
 {
     // Posición inicial del caverman
-    jugador.setPos(50, 720);  // ajusta según tu escena
-
+    jugador.setPos(50, 720);
+    //Rocas volcan
     tiempoAcumulado = 0;
-    intervaloGeneracion = 0.5; //cada 0.5s
+    intervaloGeneracion = 0.5;
 
-    // Modelo de movimiento parabólico (gravedad positiva hacia abajo)
-    ModeloMovimiento* modelo = new ModeloMovimiento(9.8);
+    // Modelo de movimiento parabólico
+    ModeloMovimiento* modelo = new ModeloMovimiento(700);
 
-    // Arma del volcán: daño 10, velocidad 150
-    armaVolcan = new Arma(10, 180, modelo);
+    // Arma del volcán: daño , velocidad, modelo
+    armaVolcan = new Arma(10, 600, modelo);
+    // Corazones
+    tiempoCorazones   = 0.0;
+    intervaloCorazones = 5.0;  // ajusta si quieres más o menos frecuentes
+
 }
 NivelVolcan::~NivelVolcan()
 {
@@ -29,21 +38,59 @@ NivelVolcan::~NivelVolcan()
 
 void NivelVolcan::generarRoca()
 {
-    // Coordenadas de la boca del volcán (ajusta según tu fondo)
     float origenX = 1090;
     float origenY = 210;
 
-    // Pequeña variación en la dirección vertical
-    float min = 0;
-    float max = 1;
+    // Varaciones en la generacion
+    float min_Y = 0;
+    float max_Y = 4;
+    float min_X = -10;
+    float max_X = 5;
 
-    float r    = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
-    float dirX = -0.5;
-    float dirY = min + r * (max - min);
+    float dirX = generarNumeroaleatorio(min_X,max_X);
+
+    //float dirY = generarNumeroaleatorio(min_Y,max_Y);
+    float dirY = -4;
+
 
     proyectil* p = armaVolcan->crearProyectil(origenX, origenY, dirX, dirY);
     proyectilesEnemigos.push_back(p);
 }
+
+void NivelVolcan::eliminarRocaEnIndice(int indice)
+{
+    if (indice < 0 || indice >= static_cast<int>(proyectilesEnemigos.size()))
+        return;
+
+    delete proyectilesEnemigos[indice];
+
+    proyectilesEnemigos.erase(proyectilesEnemigos.begin() + indice);
+}
+void NivelVolcan::generarCorazonDesdeArriba()
+{
+    // Posición del jugador
+    float xJug = jugador.getX();
+
+    // Rango horizontal alrededor del jugador
+    float xMin = xJug - 300.0f;
+    float xMax = xJug + 300.0f;
+
+    // Por si acaso, limita un poco (ajusta según tu mundo)
+    if (xMin < 0.0f)   xMin = 0.0f;
+    if (xMax > 1500.0f) xMax = 1500.0f;
+
+    float xSpawn = generarNumeroaleatorio(xMin, xMax);
+    float ySpawn = -50.0f;  // un poco por encima de la pantalla
+
+    // Modelo de caída: solo gravedad hacia abajo
+    ModeloMovimiento* modeloCorazon = new ModeloMovimiento(500); // g fuerte, cae rápido
+
+    // vx = 0, vy = 0 -> empieza quieto y la gravedad lo acelera hacia abajo
+    proyectil* c = new proyectil(xSpawn, ySpawn, 0.0f, 0.0f, 0, modeloCorazon);
+
+    corazones.push_back(c);
+}
+
 
 void NivelVolcan::actualizar(float dt)
 {
@@ -60,8 +107,17 @@ void NivelVolcan::actualizar(float dt)
     for (proyectil* p : proyectilesEnemigos) {
         p->actualizar(dt);
     }
+    //Acumulamos tiempo y generamos corazón cada cierto intervalo
+    tiempoCorazones += dt;
+    if (tiempoCorazones >= intervaloCorazones) {
+        tiempoCorazones = 0.0f;
+        generarCorazonDesdeArriba();
+    }
 
-    // 4) Eliminar rocas que se salieron de la pantalla
+    //Actualizar movimiento de corazones
+    actualizarCorazones(dt);
+
+    //Eliminar rocas que se salieron de la pantalla
     int i = 0;
     while (i < static_cast<int>(proyectilesEnemigos.size())) {
         if (proyectilesEnemigos[i]->getY() > 710) {
@@ -72,5 +128,33 @@ void NivelVolcan::actualizar(float dt)
         }
     }
 
-    // Más adelante: aquí irán las colisiones roca ↔ caverman
+}
+void NivelVolcan::actualizarCorazones(float dt)
+{
+    int i = 0;
+    while (i < static_cast<int>(corazones.size())) {
+        proyectil* c = corazones[i];
+        if (!c) {
+            ++i;
+            continue;
+        }
+
+        c->actualizar(dt);
+
+        // Si sale del área visible, lo eliminamos
+        if (c->debeDestruirse() || c->getY() > 800.0f) {
+            delete c;
+            corazones.erase(corazones.begin() + i);
+        } else {
+            ++i;
+        }
+    }
+}
+void NivelVolcan::eliminarCorazonEnIndice(int indice)
+{
+    if (indice < 0 || indice >= static_cast<int>(corazones.size()))
+        return;
+
+    delete corazones[indice];
+    corazones.erase(corazones.begin() + indice);
 }

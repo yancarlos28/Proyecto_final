@@ -5,7 +5,6 @@
 #include "nivel.h"
 #include "proyectil.h"
 #include "arma.h"
-
 class NivelVolcan : public Nivel
 {
 
@@ -19,6 +18,11 @@ private:
     // Opcional: banderas si luego quieres terminar el nivel
     bool completado = false;
     bool fallido = false;
+    // --- VIDAS (corazones que caen del cielo) ---
+    std::vector<proyectil*> corazones;
+    float tiempoCorazones = 0.0f;
+    float intervaloCorazones = 5.0f; // cada 5 s cae un corazón
+
 
 public:
 
@@ -26,12 +30,19 @@ public:
     ~NivelVolcan() override;
 
     void generarRoca();
+    void eliminarRocaEnIndice(int indice);
     void actualizar(float dt) override;
 
     // Interfaz del nivel
     bool estaCompletado() const override { return completado; }
     bool estaFallido() const override { return fallido; }
 
+    float generarNumeroaleatorio(float min, float max);
+    // Corazones (para que MainWindow los pueda dibujar)
+    const std::vector<proyectil*>& getCorazones() const { return corazones; }
+    void generarCorazonDesdeArriba();
+    void actualizarCorazones(float dt);
+    void eliminarCorazonEnIndice(int indice);
 };
 
 #endif // NIVELVOLCAN_H

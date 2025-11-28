@@ -18,6 +18,28 @@ struct BolaNieveOscilante {
     float fase;         // ángulo actual de la sinusoide
     float frecuencia;   // velocidad angular de la oscilación
     float yCentro;      // línea base de la oscilación
+
+};
+// ==== NUEVO: antorcha del jugador y bolitas de fuego ====
+struct AntorchaJugador {
+    float x;
+    float y;
+    float velocidadY;
+    bool activa;
+    bool explotada;
+    float angulo;      // en grados
+    float velAngular;  // grados por segundo
+    // NUEVO:
+    float yInicio;             // y desde donde salió
+    float distanciaExplosion;  // cuánto debe subir antes de explotar
+
+};
+
+struct BolitaFuego {
+    float x;
+    float y;
+    float velX;
+    float velY;
 };
 
 class NivelSnowman : public Nivel
@@ -36,6 +58,15 @@ public:
     // Acceso a los proyectiles para la interfaz
     const vector<proyectil*>& getBolasParabolicas() const;
     const vector<BolaNieveOscilante>& getBolasOscilantes() const;
+    void lanzarAntorcha();  // llamado desde MainWindow (tecla)
+    const AntorchaJugador& getAntorcha() const;
+    bool hayAntorchaActiva() const;
+    // ⬇⬇⬇ NUEVO: temperatura para el termómetro ⬇⬇⬇
+    float getTemperaturaActual() const { return temperaturaActual; }
+
+
+    const std::vector<BolitaFuego>& getBolitasFuego() const;
+    void eliminarBolitaFuegoEnIndice(size_t i);
 
 private:
 
@@ -45,9 +76,17 @@ private:
     // Arma para bolas parabólicas
     Arma* armaParabolica;
     vector<proyectil*> bolasParabolicas;
-
+    // ⬇⬇⬇ NUEVO: variables de temperatura ⬇⬇⬇
+    float temperaturaActual;      // °C actual del nivel
+    float tempMax;                // por ejemplo 0 °C
+    float tempMin;                // por ejemplo -30 °C
+    float velocidadEnfriamiento;  // °C/segundo
     // Bolas con movimiento oscilatorio
     vector<BolaNieveOscilante> bolasOscilantes;
+    // --- NUEVO: sistema de antorcha del jugador ---
+    AntorchaJugador antorcha;
+    std::vector<BolitaFuego> bolitasFuego;
+    float alturaExplosionAntorcha;   // y donde explota
 
     // Control de patrones de ataque
     enum class PatronAtaque { Parabolico, Oscilatorio };
@@ -65,8 +104,11 @@ private:
 
     void actualizarBolasParabolicas(float dt);
     void actualizarBolasOscilantes(float dt);
+    // --- NUEVO ---
+    void actualizarAntorchaYFuego(float dt);
+    void crearFragmentosDesdeAntorcha();
 
-    //void eliminarBolaPorIndice(size_t i);
+
 };
 
 #endif // NIVELSNOWMAN_H
