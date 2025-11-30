@@ -207,6 +207,24 @@ void MainWindow::cargarNivel(TipoNivel tipo)
 
         // Duración nivel volcán
         duracionNivel =40;
+        // 👉 Posición inicial del jugador en volcán
+        caverman &jug = nivel->getJugador();
+        volcanInicioX = jug.getX();
+        volcanInicioY = jug.getY();
+
+        // 👉 Crear sprite de la meta
+        QPixmap metaPix(":/recursos_juego/meta_volcan.png");   // cambia a tu ruta real
+        metaVolcanItem = scene->addPixmap(metaPix);
+        metaVolcanItem->setZValue(8);
+        metaVolcanItem->setScale(0.1);          // la haces más pequeña si quieres
+
+        // Pon la meta lejos para que tenga que ir hasta allá
+        // (ajusta estas coordenadas a donde quieras que esté la meta)
+        metaVolcanItem->setPos(1410, 560);
+
+        // Estado inicial
+        metaVolcanTomada = false;
+        metaVolcanCompletada = false;
         break;
     }
 
@@ -364,6 +382,15 @@ void MainWindow::limpiarSpritesNivel()
         delete item;
     }
     bolitasFuegoSprites.clear();
+    // Meta del volcán
+    if (metaVolcanItem) {
+        scene->removeItem(metaVolcanItem);
+        delete metaVolcanItem;
+        metaVolcanItem = nullptr;
+    }
+    metaVolcanTomada = false;
+    metaVolcanCompletada = false;
+
 }
 
 
@@ -570,6 +597,47 @@ void MainWindow::actualizarJuego()
         if (tomoCorazon) {
             caverman &jug = nivel->getJugador();
             actualizarBarraVida(jug.getVida());
+        }
+        // --- 1) Recoger la meta ---
+        if (!metaVolcanTomada && metaVolcanItem && cavermanSprite) {
+            if (cavermanSprite->collidesWithItem(metaVolcanItem)) {
+                metaVolcanTomada = true;
+
+                // Ocultar o eliminar la meta del mapa
+                metaVolcanItem->setVisible(false);
+                // O si prefieres: scene->removeItem(metaVolcanItem);
+                //                delete metaVolcanItem;
+                //                metaVolcanItem = nullptr;
+
+                qDebug() << "Meta del volcán tomada";
+            }
+        }
+
+        // --- 2) Revisar si vuelve a la posición inicial con la meta ---
+        if (metaVolcanTomada && !metaVolcanCompletada) {
+            caverman &jug = nivel->getJugador();
+            float dx = jug.getX() - volcanInicioX;
+            float dy = jug.getY() - volcanInicioY;
+            // Que flote un poquito encima del caverman
+            metaVolcanItem->setVisible(true);
+            metaVolcanItem->setPos(
+                cavermanSprite->x() + 10,
+                cavermanSprite->y() - 40
+                );
+
+            // Margen de tolerancia para "llegó al inicio"
+            const float tolerancia = 30.0f;
+
+            if (std::fabs(dx) < tolerancia && std::fabs(dy) < tolerancia) {
+                metaVolcanCompletada = true;
+                qDebug() << "Completó objetivo del volcán (recogió meta y volvió al inicio)";
+
+                // Aquí decides qué hacer:
+                // 1) Marcar victoria del nivel volcán
+                // 2) Pasar al siguiente nivel
+                irAlMenu();
+                // O mostrar mensaje de victoria, etc.
+            }
         }
     }
     if (tipoNivelActual == TipoNivel::JefeSnow) {

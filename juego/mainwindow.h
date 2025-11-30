@@ -10,8 +10,11 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QVBoxLayout>
+#include <QSoundEffect>
 #include <memory>
 #include <vector>
+#include <QMediaPlayer>
+#include <QAudioOutput>
 
 #include "sprite.h"
 #include "nivel.h"
@@ -52,6 +55,13 @@ private:
     QGraphicsScene *scene;
     enum class EstadoJuego { EnMenu, EnNivel };
     EstadoJuego estadoJuego = EstadoJuego::EnMenu;
+    // --- Sonidos ---
+    QSoundEffect *sonidoAmbienteVolcan = nullptr;
+    QSoundEffect *sonidoGolpeVolcan    = nullptr;
+    // --- Sonidos ---
+    QMediaPlayer *playerMamut = nullptr;
+    QAudioOutput *audioMamut = nullptr;
+
 
     //logica del nivel
     std::unique_ptr<Nivel> nivel;
@@ -70,7 +80,7 @@ private:
     //Tiempos
     QTimer *timerJuego=nullptr;
     QTimer *timerTiempo=nullptr;
-    // Contadores de tiempo ---
+    // Contadores de tiempo
     int segundosJuego = 0;
     int duracionNivel = 0;
     int segundosRestantesNivel = 0;
@@ -82,11 +92,23 @@ private:
     QPixmap barraVidaSheet;
     int vidaFrameAncho = 0;
     int vidaFrameAlto  = 0;
+    // --- Meta del nivel volcán ---
+    QGraphicsPixmapItem *metaVolcanItem = nullptr;
+    bool metaVolcanTomada = false;
+    bool metaVolcanCompletada = false;
+    float volcanInicioX = 0.0f;
+    float volcanInicioY = 0.0f;
+
 
     QGraphicsPixmapItem *barraVidaEnemigo= nullptr;
     //QPixmap barraVidaSheet;
     //int vidaFracmentoAncho = 0;
     //int vidaFracmentoAlto  = 0;
+    // Termómetro (nivel Snowman)
+    QPixmap termometroSheet;
+    QGraphicsPixmapItem *termometroItem = nullptr;
+    int termFrameAncho = 100;
+    int termFrameAlto  = 293;
 
 
     //Niveles
@@ -100,6 +122,9 @@ private:
     std::vector<QGraphicsPixmapItem*> bolasSprites;
     void sincronizarBolasConNivel();
     bool evaluarColisionBolasConJugador();
+    std::vector<QGraphicsPixmapItem*> corazonesSprites;
+    void sincronizarCorazonesVolcan();
+    bool evaluarColisionCorazonesConJugador();
 
     //Mamut
     std::vector<QGraphicsPixmapItem*> lanzasSprites;
@@ -107,19 +132,22 @@ private:
     bool evaluarColisionLanzasConMamut();
     bool evaluarColisionMamutConJugador();
     bool evaluarColisionFlechasConJugador();
-
     //Soga
     QGraphicsLineItem *sogaItem = nullptr;
 
-    //Hombre nieve
+    //Snowman
     std::vector<QGraphicsPixmapItem*> bolasNieveSprites;
     void sincronizarBolasNieveConNivel();
     bool evaluarColisionBolasNieveConJugador();
+    // Antorcha
+    QGraphicsPixmapItem *antorchaItem = nullptr;
+    std::vector<QGraphicsPixmapItem*> bolitasFuegoSprites;
+    void sincronizarAntorchaConNivel();
+    void sincronizarBolitasFuegoConNivel();
+    bool evaluarColisionFuegoConSnowman();
 
     void irAlMenu();
     void iniciarNivel(TipoNivel tipo);
-
-
 
 };
 #endif // MAINWINDOW_H
