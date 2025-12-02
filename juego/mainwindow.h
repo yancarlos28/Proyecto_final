@@ -109,6 +109,12 @@ private:
     QGraphicsPixmapItem *termometroItem = nullptr;
     int termFrameAncho = 100;
     int termFrameAlto  = 293;
+    // --- Pantalla de resultado (ganó / perdió) ---
+    QGraphicsPixmapItem *resultadoItem = nullptr;
+    bool mostrandoResultado = false;
+
+    void mostrarPantallaResultado(bool gano);
+
 
 
     //Niveles

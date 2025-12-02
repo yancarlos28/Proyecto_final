@@ -297,7 +297,7 @@ void MainWindow::cargarNivel(TipoNivel tipo)
 
 
         // 3) Fondo de nieve
-        QImage img(":/escenas/nieve.jpg");
+        QImage img(":/escenas/hielo.jpeg");
         QImage imgEscalada = img.scaled(1920, 1200,Qt::IgnoreAspectRatio,Qt::SmoothTransformation);
         scene->setBackgroundBrush(QPixmap::fromImage(imgEscalada));
 
@@ -342,6 +342,52 @@ void MainWindow::cargarNivel(TipoNivel tipo)
     actualizarBarraVida(j.getVida());
 
 }
+void MainWindow::mostrarPantallaResultado(bool gano)
+{
+    // Si ya se está mostrando, no hacer nada
+    if (mostrandoResultado) return;
+    mostrandoResultado = true;
+
+    // Detener timers de juego para "congelar" todo
+    if (timerJuego)  timerJuego->stop();
+    if (timerTiempo) timerTiempo->stop();
+
+    // Elegir imagen según ganó / perdió
+    // Cambia las rutas por las que tú tengas en el .qrc
+    QPixmap img(gano ? ":/recursos_juego/you_win.jpg"
+                     : ":/recursos_juego/game_over.jpg");
+
+    // Escalar la imagen al tamaño de la escena actual
+    QRectF r = scene->sceneRect();
+    QPixmap imgEscalada = img.scaled(
+        static_cast<int>(r.width()),
+        static_cast<int>(r.height()),
+        Qt::IgnoreAspectRatio,
+        Qt::SmoothTransformation
+        );
+
+    if (!resultadoItem) {
+        resultadoItem = scene->addPixmap(imgEscalada);
+    } else {
+        resultadoItem->setPixmap(imgEscalada);
+        if (!resultadoItem->scene()) {
+            scene->addItem(resultadoItem);
+        }
+    }
+
+    resultadoItem->setPos(r.x(), r.y());
+    resultadoItem->setZValue(9999);   // por encima de todo
+
+    // Después de 0.5 segundos, quitar la imagen y volver al menú
+    QTimer::singleShot(1000, this, [this]() {
+        if (resultadoItem && resultadoItem->scene()) {
+            scene->removeItem(resultadoItem);
+        }
+        mostrandoResultado = false;
+        irAlMenu();
+    });
+}
+
 void MainWindow::limpiarSpritesNivel()
 {
     // Sprites de rocas del volcan
@@ -514,6 +560,8 @@ void MainWindow::keyReleaseEvent(QKeyEvent *event)
 void MainWindow::actualizarJuego()
 {
     if (!nivel) return;
+    // Si estoy mostrando la pantalla de resultado, no actualizo nada más
+    if (mostrandoResultado) return;
     float dt = 0.016;
 
     nivel->actualizar(dt);
@@ -590,6 +638,7 @@ void MainWindow::actualizarJuego()
         }
         if(nivel->getJugador().getVida()==0){
             qDebug() << "El caverman murió";
+            mostrarPantallaResultado(false);
         }
         // Sincronizar corazones que caen
         sincronizarCorazonesVolcan();
@@ -632,10 +681,8 @@ void MainWindow::actualizarJuego()
                 metaVolcanCompletada = true;
                 qDebug() << "Completó objetivo del volcán (recogió meta y volvió al inicio)";
 
-                // Aquí decides qué hacer:
-                // 1) Marcar victoria del nivel volcán
-                // 2) Pasar al siguiente nivel
-                irAlMenu();
+                // Objetivo del volcán completado (trajo la bandera)
+                mostrarPantallaResultado(true);
                 // O mostrar mensaje de victoria, etc.
             }
         }
@@ -698,9 +745,11 @@ void MainWindow::actualizarJuego()
         //Muerte del jugador
         if(nivel->getJugador().getVida()==0){
             qDebug() << "El caverman murió";
+            mostrarPantallaResultado(false);   // PERDIÓ
         }
         if (static_cast<NivelSnowman*>(nivel.get())->getSnowman().getVida()==0){
             qDebug() << "El snowman murió";
+            mostrarPantallaResultado(true);    // GANÓ
         }
 
     }
@@ -718,14 +767,7 @@ void MainWindow::actualizarJuego()
         barraVidaItem->setPos(esquina.x() + margenX,esquina.y() + margenY);
     }
 
-    // Verificar CAMBIO DE NIVEL
-    if (nivel->estaCompletado()) {
-        cambiarAlSiguienteNivel();
-    }
-    else if (nivel->estaFallido()) {
-        // Aquí puedes reiniciar el mismo nivel, mostrar "Game Over", etc.
-        // cargarNivel(tipoNivelActual);
-    }
+
 }
 void MainWindow::actualizarTiempo()
 {
@@ -876,6 +918,7 @@ bool MainWindow::evaluarColisionLanzasConMamut()
             if (boss.getVida() <= 0) {
                 mamutSprite->matarMamut();
                 boss.setVel(0, 0);
+                mostrarPantallaResultado(true);
 
             } else {
                 mamutSprite->mostrarDanioMamut();
@@ -1057,6 +1100,18 @@ bool MainWindow::evaluarColisionFuegoConSnowman()
 
             // 2) Quitar bolita lógica
             ns->eliminarBolitaFuegoEnIndice(i);
+            if (boss.getVida() > 0) {
+                if (snowmanSprite) {
+                    snowmanSprite->mostrarDanioSnowman();
+                }
+            }
+            if (boss.getVida() <= 0) {
+                if (snowmanSprite) {
+                    snowmanSprite->matarSnowman();
+                }
+            }
+
+
 
             continue;   // no incrementamos i aquí
         }
