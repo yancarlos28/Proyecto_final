@@ -56,8 +56,8 @@ private:
     enum class EstadoJuego { EnMenu, EnNivel };
     EstadoJuego estadoJuego = EstadoJuego::EnMenu;
     // --- Sonidos ---
-    QSoundEffect *sonidoAmbienteVolcan = nullptr;
-    QSoundEffect *sonidoGolpeVolcan    = nullptr;
+    QMediaPlayer *playerVolcan = nullptr;
+    QAudioOutput *audioVolcan = nullptr;
     // --- Sonidos ---
     QMediaPlayer *playerMamut = nullptr;
     QAudioOutput *audioMamut = nullptr;

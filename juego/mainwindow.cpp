@@ -45,12 +45,33 @@ MainWindow::MainWindow(QWidget *parent)
     ui->lblIconoFlecha->setPixmap(flechaEscalada);
     ui->lblIconoFlecha->setScaledContents(true); // opcional, por si el tamaño del label cambia
     ui->lblMunicion->setText("0");
+
     // --- Inicializar sonidos ---
     playerMamut = new QMediaPlayer(this);
     audioMamut  = new QAudioOutput(this);
     playerMamut->setAudioOutput(audioMamut);
     audioMamut->setVolume(0.5);
     playerMamut->setSource(QUrl("qrc:/sonidos/jungle.mp3"));
+    playerMamut->stop();
+
+    playerVolcan = new QMediaPlayer(this);
+    audioVolcan  = new QAudioOutput(this);
+    playerVolcan->setAudioOutput(audioVolcan);
+    audioVolcan->setVolume(0.5);
+    playerVolcan->setSource(QUrl("qrc:/sonidos/volcan.mp3"));
+    playerVolcan->stop();
+
+    // Barra de vida del enemigo
+    ui->pbVidaEnemigo->setMinimum(0);
+    ui->pbVidaEnemigo->setMaximum(300);   // por ejemplo, vida máxima del mamut/snowman
+    ui->pbVidaEnemigo->setFixedSize(300, 250);   // ancho 250px, alto 25px
+    ui->pbVidaEnemigo->setValue(0);
+    ui->pbVidaEnemigo->move(1050, 80); // X = 1200, Y = 20  (ejemplo)
+    ui->pbVidaEnemigo->setTextVisible(false);
+
+
+    ui->pbVidaEnemigo->hide();            // ocúltala al inicio
+
 
 
     // Esconde al inicio
@@ -58,7 +79,6 @@ MainWindow::MainWindow(QWidget *parent)
     ui->lblMunicion->hide();
 
 }
-
 
 //Destructor UI
 MainWindow::~MainWindow()
@@ -68,6 +88,11 @@ MainWindow::~MainWindow()
 
 void MainWindow::irAlMenu()
 {
+    ui->pbVidaEnemigo->hide();
+    //Asegurar el stop de la música
+    if (playerMamut)  playerMamut->stop();
+    if (playerVolcan) playerVolcan->stop();
+
     estadoJuego = EstadoJuego::EnMenu;
     ui->lblIconoFlecha->hide();
     ui->lblMunicion->hide();
@@ -198,8 +223,13 @@ void MainWindow::cargarNivel(TipoNivel tipo)
     switch (tipo) {
     case TipoNivel::Volcan:
     {
+        if (playerVolcan) {
+            playerVolcan->stop();
+            playerVolcan->play();
+        }
         nivel = std::make_unique<NivelVolcan>();
         scene->setSceneRect(0, 0, 1536, 1024);
+
 
         QImage img("C:/Users/Jean/OneDrive/Documentos/INFORMATICA_2/Laboratorio/game/escenas/volcan.png");
         QImage imgEscalada = img.scaled(1536, 1024,Qt::IgnoreAspectRatio,Qt::SmoothTransformation);
@@ -241,6 +271,7 @@ void MainWindow::cargarNivel(TipoNivel tipo)
 
         nivel = std::make_unique<NivelMamut>();
         NivelMamut* nivelMamut = static_cast<NivelMamut*>(nivel.get());
+
         //Central la vista
         ui->graphicsView->centerOn(cavermanSprite);
 
@@ -259,6 +290,10 @@ void MainWindow::cargarNivel(TipoNivel tipo)
 
         mamut &boss = nivelMamut->getMamut();
         mamutSprite->setPos(boss.getX(), boss.getY());
+        ui->pbVidaEnemigo->setMinimum(0);
+        ui->pbVidaEnemigo->setMaximum(200);           // VIDA MÁXIMA FIJA DEL MAMUT
+        ui->pbVidaEnemigo->setValue(boss.getVida());  // empieza en 200
+        ui->pbVidaEnemigo->show();
 
         // Crear soga gráfica
         if (sogaItem == nullptr) {
@@ -314,9 +349,14 @@ void MainWindow::cargarNivel(TipoNivel tipo)
             // Posición inicial según el modelo lógico
             Snowman &boss = ns->getSnowman();
             snowmanSprite->setPos(boss.getX(), boss.getY());
+            ui->pbVidaEnemigo->setMinimum(0);
+            ui->pbVidaEnemigo->setMaximum(300);           // VIDA MÁXIMA FIJA DEL SNOWMAN
+            ui->pbVidaEnemigo->setValue(boss.getVida());  // empieza en 300
+            ui->pbVidaEnemigo->show();
         }
         // 5) Este nivel no tiene temporizador por ahora
         duracionNivel = 0;
+
         break;
     }
 
@@ -348,24 +388,44 @@ void MainWindow::mostrarPantallaResultado(bool gano)
     if (mostrandoResultado) return;
     mostrandoResultado = true;
 
+    // Detener cualquier música de nivel
+    if (playerMamut)  playerMamut->stop();
+    if (playerVolcan) playerVolcan->stop();
+
     // Detener timers de juego para "congelar" todo
     if (timerJuego)  timerJuego->stop();
     if (timerTiempo) timerTiempo->stop();
 
     // Elegir imagen según ganó / perdió
-    // Cambia las rutas por las que tú tengas en el .qrc
     QPixmap img(gano ? ":/recursos_juego/you_win.jpg"
                      : ":/recursos_juego/game_over.jpg");
 
-    // Escalar la imagen al tamaño de la escena actual
     QRectF r = scene->sceneRect();
-    QPixmap imgEscalada = img.scaled(
-        static_cast<int>(r.width()),
-        static_cast<int>(r.height()),
-        Qt::IgnoreAspectRatio,
-        Qt::SmoothTransformation
-        );
+    QPixmap imgEscalada;
 
+    // --- ESCALADO ---
+    if (tipoNivelActual == TipoNivel::Mamut) {
+        // MAMUT: lo dejamos como tú lo tenías (tamaño original del JPG)
+        imgEscalada = img.scaled(
+            img.width(),
+            img.height(),
+            Qt::KeepAspectRatio,
+            Qt::SmoothTransformation
+            );
+    } else {
+        // OTROS NIVELES (Volcán, Snowman): imagen más pequeña, NO pantalla completa
+        const int maxAncho = 700;  // ajusta si la quieres más grande/pequeña
+        const int maxAlto  = 500;
+
+        imgEscalada = img.scaled(
+            maxAncho,
+            maxAlto,
+            Qt::KeepAspectRatio,
+            Qt::SmoothTransformation
+            );
+    }
+
+    // Crear / actualizar el item
     if (!resultadoItem) {
         resultadoItem = scene->addPixmap(imgEscalada);
     } else {
@@ -375,10 +435,28 @@ void MainWindow::mostrarPantallaResultado(bool gano)
         }
     }
 
-    resultadoItem->setPos(r.x(), r.y());
-    resultadoItem->setZValue(9999);   // por encima de todo
+    // --- POSICIÓN ---
+    if (tipoNivelActual == TipoNivel::Mamut) {
+        // Tu posición especial para mamut (la dejo igual)
+        float x = r.center().x() - imgEscalada.width()  - 260;
+        float y = r.center().y() - imgEscalada.height()+150;
+        resultadoItem->setPos(x, y);
+    }
+    else if(tipoNivelActual == TipoNivel::JefeSnow)
+    {
+        float x = (r.center().x() - imgEscalada.width()  / 2.0)-200;
+        float y = (r.center().y() - imgEscalada.height() / 2.0)-100;
+        resultadoItem->setPos(x, y);
+    }
+    else {
+        float x = (r.center().x() - imgEscalada.width()  / 2.0);
+        float y = (r.center().y() - imgEscalada.height() / 2.0);
+        resultadoItem->setPos(x, y);
+    }
 
-    // Después de 0.5 segundos, quitar la imagen y volver al menú
+    resultadoItem->setZValue(9999);
+
+    // Después de 1 segundo, quitar la imagen y volver al menú
     QTimer::singleShot(1000, this, [this]() {
         if (resultadoItem && resultadoItem->scene()) {
             scene->removeItem(resultadoItem);
@@ -387,6 +465,7 @@ void MainWindow::mostrarPantallaResultado(bool gano)
         irAlMenu();
     });
 }
+
 
 void MainWindow::limpiarSpritesNivel()
 {
@@ -405,7 +484,8 @@ void MainWindow::limpiarSpritesNivel()
         mamutSprite = nullptr;
     }
     //Lanzas sprites
-    for (int i = 0; i < lanzasSprites.size(); ++i) {
+    for (int i = 0; i < lanzasSprites.size(); ++i)
+    {
         scene->removeItem(lanzasSprites[i]);
         delete lanzasSprites[i];
     }
@@ -587,30 +667,24 @@ void MainWindow::actualizarJuego()
     if (jug.getY() < limites.top())   jug.setPos(jug.getX(), limites.top());
     if (jug.getY() > limites.bottom())jug.setPos(jug.getX(), limites.bottom());
 
-    //Nivel mamut
     // Nivel mamut
     if (tipoNivelActual == TipoNivel::Mamut && mamutSprite && sogaItem) {
-        // centrar cámara en el jugador
         ui->graphicsView->centerOn(cavermanSprite);
-
         NivelMamut* nivelMamut = static_cast<NivelMamut*>(nivel.get());
+
         mamut &boss = nivelMamut->getMamut();
-
-        // Posición del mamut
         mamutSprite->setPos(boss.getX(), boss.getY());
-
-        // Soga
-        QPointF ancla(nivelMamut->getSogaXAncla(), nivelMamut->getSogaYAncla());
-        QPointF extremo(nivelMamut->getSogaXExtremo(), nivelMamut->getSogaYExtremo());
-        sogaItem->setLine(QLineF(ancla, extremo));
-        sogaItem->setVisible(true);
-
         // Dirección del mamut según velocidad
         if (boss.getVelX() < 0) {
             mamutSprite->setDireccion(sprite::Direccion::Izquierda);
         } else if (boss.getVelX() > 0) {
             mamutSprite->setDireccion(sprite::Direccion::Derecha);
         }
+        // Configurar soga en el nivel
+        QPointF ancla(nivelMamut->getSogaXAncla(), nivelMamut->getSogaYAncla());
+        QPointF extremo(nivelMamut->getSogaXExtremo(), nivelMamut->getSogaYExtremo());
+        sogaItem->setLine(QLineF(ancla, extremo));
+        sogaItem->setVisible(true);
 
         // Lanzas del jugador contra el mamut
         sincronizarLanzasConNivel();
@@ -625,6 +699,12 @@ void MainWindow::actualizarJuego()
 
         //Actualizar lanzas
         ui->lblMunicion->setText(QString::number(nivelMamut->getMunicionJugador()));
+
+        caverman &jug = nivel->getJugador();
+        if (jug.getVida() <= 0) {
+            mostrarPantallaResultado(false);
+            return;
+        }
     }
 
 
@@ -639,6 +719,7 @@ void MainWindow::actualizarJuego()
         if(nivel->getJugador().getVida()==0){
             qDebug() << "El caverman murió";
             mostrarPantallaResultado(false);
+            playerVolcan->stop();
         }
         // Sincronizar corazones que caen
         sincronizarCorazonesVolcan();
@@ -675,7 +756,7 @@ void MainWindow::actualizarJuego()
                 );
 
             // Margen de tolerancia para "llegó al inicio"
-            const float tolerancia = 30.0f;
+            const float tolerancia = 30.0;
 
             if (std::fabs(dx) < tolerancia && std::fabs(dy) < tolerancia) {
                 metaVolcanCompletada = true;
@@ -683,6 +764,7 @@ void MainWindow::actualizarJuego()
 
                 // Objetivo del volcán completado (trajo la bandera)
                 mostrarPantallaResultado(true);
+                playerVolcan->stop();
                 // O mostrar mensaje de victoria, etc.
             }
         }
@@ -791,7 +873,9 @@ void MainWindow::actualizarTiempo()
         if (segundosRestantesNivel == 0 &&
             tipoNivelActual == TipoNivel::Volcan)
         {
-            irAlMenu();
+            qDebug() << "Se acabó el tiempo del volcán";
+            mostrarPantallaResultado(false);   // PERDIÓ
+            if (playerVolcan) playerVolcan->stop();
         }
     }
 }
@@ -839,7 +923,7 @@ bool MainWindow::evaluarColisionBolasConJugador()
         if (cavermanSprite->collidesWithItem(bolaItem)) {
 
             caverman &jug = nivel->getJugador();
-            jug.recibirDanio(10);
+            jug.recibirDanio(20);
             cavermanSprite->mostrarDanio();
 
             actualizarBarraVida(jug.getVida());
@@ -875,7 +959,7 @@ bool MainWindow::evaluarColisionMamutConJugador()
 
         // 1) Lógica del caverman (vida)
         caverman &jug = nivel->getJugador();
-        jug.recibirDanio(1);
+        jug.recibirDanio(2);
 
         // 2) Mostrar daño en el sprite
         cavermanSprite->mostrarDanio();
@@ -910,9 +994,9 @@ bool MainWindow::evaluarColisionLanzasConMamut()
 
             proyectil *p = lanzasLogicas[i];
             int danio = p->getDanio();
-
             mamut &boss = nivelMamut->getMamut();
             boss.recibirDanio(danio);
+            ui->pbVidaEnemigo->setValue(boss.getVida());
 
             // Cambiar sprite del mamut según su vida
             if (boss.getVida() <= 0) {
@@ -1089,6 +1173,7 @@ bool MainWindow::evaluarColisionFuegoConSnowman()
             // Lógica del jefe: pierde vida
             Snowman &boss = ns->getSnowman();
             boss.recibirDanio(10);  // ajusta el daño que quieras
+            ui->pbVidaEnemigo->setValue(boss.getVida());
 
             // (Opcional) cambiar animación del snowman a daño
             // snowmanSprite->mostrarDanioSnowman();  // si lo implementas
@@ -1121,8 +1206,6 @@ bool MainWindow::evaluarColisionFuegoConSnowman()
 
     return huboImpacto;
 }
-
-
 
 //sincronizacion acciones
 void MainWindow::sincronizarBolasConNivel()
@@ -1191,7 +1274,6 @@ void MainWindow::sincronizarCorazonesVolcan()
         corazonesSprites[i]->setPos(c->getX(), c->getY());
     }
 }
-
 void MainWindow::sincronizarLanzasConNivel()
 {
     // Nivel debe ser Mamut
@@ -1256,7 +1338,6 @@ void MainWindow::sincronizarLanzasConNivel()
         item->setRotation(angDeg + spriteOffsetDeg);
     }
 }
-
 void MainWindow::sincronizarBolasNieveConNivel()
 {
     NivelSnowman *ns = dynamic_cast<NivelSnowman*>(nivel.get());
@@ -1341,7 +1422,6 @@ void MainWindow::sincronizarBolitasFuegoConNivel()
                      b.y - alto  / 2.0f);
     }
 }
-
 void MainWindow::sincronizarAntorchaConNivel()
 {
     if (tipoNivelActual != TipoNivel::JefeSnow) return;
@@ -1390,13 +1470,11 @@ void MainWindow::on_pushButtonVolcan_clicked()
 {
     iniciarNivel(TipoNivel::Volcan);
 }
-
 // Nivel Mamut
 void MainWindow::on_pushButtonMamut_clicked()
 {
     iniciarNivel(TipoNivel::Mamut);
 }
-
 // Nivel Snowman
 void MainWindow::on_pushButtonSnow_clicked()
 {
