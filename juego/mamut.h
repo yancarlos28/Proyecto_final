@@ -8,10 +8,12 @@ using namespace std;
 
 class mamut : public enemigo {
 private:
-    vector<float> rutaPatrulla; // Puntos de patrullaje en X
-    int indiceObjetivo;              // Punto de la ruta al que va
-    float velocidad;                 // pixeles por segundo
+    vector<float> rutaPatrulla;
+    int indiceObjetivo;
+    float velocidad;
+
 public:
+
     mamut();
     ~mamut() override = default;
 
