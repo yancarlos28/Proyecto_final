@@ -33,9 +33,9 @@ public:
 
     // --- Barra de vida ---
     QPixmap *pixmapVida = nullptr;
-    int vidaAncho = 0;     // ancho de un frame (530)
-    int vidaAlto = 0;      // alto de un frame (600/5 = 120)
-    int filaVida = 0;      // 0 = 5 corazones, 1 = 4, ... 4 = 1
+    int vidaAncho = 0;
+    int vidaAlto = 0;
+    int filaVida = 0;
 
     //Reserva para tiempos
     QTimer *timer;
@@ -58,21 +58,30 @@ public:
     float filas_Snowman, columnas_Snowman;
     float ancho_Snowman;
     float alto_Snowman;
+
+    // Dimensiones y columnas para el sheet de daño (420x71, 5 frames)
+    float columnas_SnowmanDanio = 0.0f;
+    float ancho_SnowmanDanio = 0.0f;
+    float alto_SnowmanDanio = 0.0f;
     enum class EstadoSnowman { Normal, Danio, Atacar, Muerto };
     EstadoSnowman estadoSnowman = EstadoSnowman::Normal;
+
+    void mostrarDanioSnowman();  // muestra solo el primer frame de la tira 420x71
+    void matarSnowman();         // reproduce todos los frames y se queda en el último
 
 
     //Setter
     void setEstado(Estado e);
     void setDireccion(Direccion d) { dir = d; }
     void mostrarDanio();
+
     //setter mamut
     void mostrarDanioMamut(); // cambia a sprite de golpeado un momento
     void matarMamut();        // cambia al sprite de muerto
     void setVidaBarra(int vida);
 
 
-
+    //Pintar los objetos
     QRectF boundingRect() const;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget);
 

@@ -17,10 +17,9 @@ sprite::sprite(QObject *parent, Tipo tipo)
 
     //Snowman
 
-    pixmap_Snowman  = new QPixmap(":/sprites/jefesnowman_lanzarbola2.png");
-    //pixmap_SnowmanDanio  = new QPixmap("");
-    //pixmap_SnowmanMuerto  = new QPixmap("");
-    //pixmap_Snowman = new QPixmap("");
+    pixmap_Snowman  = new QPixmap(":/sprites/jefesnowman_lanzarbola3.png");
+    pixmap_SnowmanDanio  = new QPixmap(":/sprites/snoman_derrotado2.png"); // <-- TU NUEVA IMAGEN 420x71
+    pixmap_SnowmanMuerto  = pixmap_SnowmanDanio; // usamos el mismo sheet para muerte
 
     // valores iniciales comunes
     filas        = 0;
@@ -51,6 +50,14 @@ sprite::sprite(QObject *parent, Tipo tipo)
         ancho = ancho_Snowman;
         alto  = alto_Snowman;
     }
+    if (!pixmap_SnowmanDanio->isNull()) {
+        ancho_SnowmanDanio = pixmap_SnowmanDanio->width() / 5.0f; // 420 / 5 = 84
+        alto_SnowmanDanio  = pixmap_SnowmanDanio->height();       // 71
+    } else {
+        ancho_SnowmanDanio = 84.0f;
+        alto_SnowmanDanio  = 71.0f;
+    }
+    columnas_SnowmanDanio = 0.0f;
 
     estado = Estado::Quieto;
     estadoAnterior = Estado::Quieto;
@@ -61,10 +68,8 @@ sprite::sprite(QObject *parent, Tipo tipo)
 
     dir = Direccion::Derecha;
 
-
-
+    // timer del juego
     timer->start(70);
-
     connect(timer, &QTimer::timeout,this, &sprite::Actualizacion);
 
     // timer del efecto de daño
@@ -78,26 +83,26 @@ sprite::Direccion sprite::getDireccion() const {
 //Modos para cuando recibe daño humano
 void sprite::mostrarDanio()
 {
-    // guardar en qué estábamos (Quieto, Caminar, Saltar)
     estadoAnterior = estado;
 
     estado = Estado::Danio;
     columnas = 0;
 
-
-    // arrancar temporizador de 200 ms
     timerDanio->start(50);
 }
 void sprite::finDanio()
 {
     if (tipoSprite == Tipo::Caverman) {
-        // volver al estado anterior del caverman
         estado = estadoAnterior;
         columnas = 0;
     } else if (tipoSprite == Tipo::Mamut) {
-        // si el mamut estaba en daño, vuelve a normal
         if (estadoMamut == EstadoMamut::Danio) {
             estadoMamut = EstadoMamut::Normal;
+        }
+    } else if (tipoSprite == Tipo::Snowman) {
+        if (estadoSnowman == EstadoSnowman::Danio) {
+            estadoSnowman = EstadoSnowman::Atacar;
+            columnas_SnowmanDanio = 0.0;
         }
     }
 }
@@ -125,6 +130,25 @@ void sprite::matarMamut()
     timerDanio->start(200);
 
 }
+void sprite::mostrarDanioSnowman()
+{
+    if (tipoSprite != Tipo::Snowman) return;
+
+    estadoSnowman = EstadoSnowman::Danio;
+    columnas_SnowmanDanio = 0.0;
+
+    timerDanio->start(200);
+}
+
+void sprite::matarSnowman()
+{
+    if (tipoSprite != Tipo::Snowman) return;
+
+    estadoSnowman = EstadoSnowman::Muerto;
+    columnas_SnowmanDanio = 0.0;
+    // timer principal seguirá llamando Actualizacion y avanzará la animación
+}
+
 
 void sprite::setEstado(Estado e)
 {
@@ -134,14 +158,14 @@ void sprite::setEstado(Estado e)
     }
 
     estado = e;
-    columnas = 0;  // empezar desde el primer frame de esa animación
+    columnas = 0;
 }
 
 
 void sprite::Actualizacion()
 {
     if (tipoSprite == Tipo::Caverman) {
-        // --- ANIMACIÓN CAVERMAN ---
+        // Animación caverman
         if (estado == Estado::Quieto) {
             columnas = 0;
         }
@@ -161,24 +185,39 @@ void sprite::Actualizacion()
     }
     else if  (tipoSprite == Tipo::Mamut) {
         if (estadoMamut == EstadoMamut::Normal) {
-            // solo animamos cuando está normal (corriendo)
+            // Mamut corriendo
             columnas_mamut += ancho_mamut;
             if (columnas_mamut >= pixmap_Mamut->width()) {
                 columnas_mamut = 0;
             }
         } else {
-            // si está herido o muerto, usamos siempre el primer frame
+            // Si está herido o muerto, usar el primer frame
             columnas_mamut = 0;
         }
     }
     else if (tipoSprite == Tipo::Snowman) {
-        // --- ANIMACIÓN Snowman ---
+        // Animación Snowman
         if (estadoSnowman == EstadoSnowman::Atacar) {
 
             columnas_Snowman += ancho_Snowman;
 
             if (pixmap_Snowman && columnas_Snowman >= pixmap_Snowman->width()) {
                 columnas_Snowman = 0;
+            }
+        }
+        else if (estadoSnowman == EstadoSnowman::Danio) {
+            // Solo el primer frame del sheet de daño
+            columnas_SnowmanDanio = 0.0;
+        }
+        else if (estadoSnowman == EstadoSnowman::Muerto) {
+            // Recorrer los 5 frames del sheet de daño
+            columnas_SnowmanDanio += ancho_SnowmanDanio;
+
+            if (pixmap_SnowmanDanio &&
+                columnas_SnowmanDanio >= pixmap_SnowmanDanio->width()) {
+
+                // quedarnos en el último frame
+                columnas_SnowmanDanio = pixmap_SnowmanDanio->width() - ancho_SnowmanDanio;
             }
         }
     }
@@ -281,30 +320,57 @@ void sprite::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QW
     }
     else {
         // ==== Snowman ====
-        const QPixmap *actual= nullptr;
+        const QPixmap *actual = nullptr;
+        int srcX = 0;
+        int srcY = 0;
+        int w    = 0;
+        int h    = 0;
+        int offsetY = 0;
 
-        if (estadoSnowman == EstadoSnowman::Atacar) {
+        // Elegir el sheet y el recorte según el estado
+        if (estadoSnowman == EstadoSnowman::Atacar ||
+            estadoSnowman == EstadoSnowman::Normal) {
+
+            // Usar el spritesheet normal del snowman
             actual = pixmap_Snowman;
+            srcX   = static_cast<int>(columnas_Snowman);
+            srcY   = static_cast<int>(filas_Snowman);   // si solo hay una fila, normalmente 0
+            w      = static_cast<int>(ancho_Snowman);
+            h      = static_cast<int>(alto_Snowman);
+            offsetY = 0;
+        }
+        else if (estadoSnowman == EstadoSnowman::Danio ||
+                 estadoSnowman == EstadoSnowman::Muerto) {
+
+            // Usar el sheet de daño 420x71 (5 frames)
+            actual = pixmap_SnowmanDanio;
+            srcX   = static_cast<int>(columnas_SnowmanDanio);
+            srcY   = 0; // una sola fila
+            w      = static_cast<int>(ancho_SnowmanDanio);
+            h      = static_cast<int>(alto_SnowmanDanio);
+            offsetY=20;
         }
 
-        int srcX = static_cast<int>(columnas_Snowman);
-        int srcY = static_cast<int>(filas_Snowman); // si solo hay una fila, 0
+        if (!actual) return;
 
         if (dir == Direccion::Izquierda) {
             painter->scale(-1, 1);
-            painter->drawPixmap(-ancho/2 * -1 - ancho, -alto/2,
-                                *actual,
-                                srcX, srcY,
-                                static_cast<int>(ancho_Snowman),
-                                static_cast<int>(alto_Snowman));
+            painter->drawPixmap(
+                (-ancho/2) * -1 - ancho,  // mismo truco que ya usabas
+                (-alto/2)+offsetY,
+                *actual,
+                srcX, srcY, w, h
+                );
         } else {
-            painter->drawPixmap(-ancho/2, -alto/2,
-                                *actual,
-                                srcX, srcY,
-                                static_cast<int>(ancho_Snowman),
-                                static_cast<int>(alto_Snowman));
+            painter->drawPixmap(
+                -ancho/2,
+                (-alto/2)+offsetY,
+                *actual,
+                srcX, srcY, w, h
+                );
         }
     }
+
 
 
     painter->restore();

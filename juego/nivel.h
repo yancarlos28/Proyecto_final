@@ -13,8 +13,7 @@ public:
 
     // Actualización lógica
     virtual void actualizar(float dt) = 0;
-    virtual bool estaCompletado() const { return false; }
-    virtual bool estaFallido() const { return false; }
+
 
     // Acceso al jugador (caverman)
     caverman& getJugador();

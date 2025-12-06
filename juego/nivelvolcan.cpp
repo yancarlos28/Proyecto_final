@@ -11,6 +11,7 @@ NivelVolcan::NivelVolcan()
 {
     // Posición inicial del caverman
     jugador.setPos(50, 720);
+
     //Rocas volcan
     tiempoAcumulado = 0;
     intervaloGeneracion = 0.5;
@@ -20,9 +21,10 @@ NivelVolcan::NivelVolcan()
 
     // Arma del volcán: daño , velocidad, modelo
     armaVolcan = new Arma(10, 600, modelo);
+
     // Corazones
     tiempoCorazones   = 0.0;
-    intervaloCorazones = 5.0;  // ajusta si quieres más o menos frecuentes
+    intervaloCorazones = 6.0;
 
 }
 NivelVolcan::~NivelVolcan()
@@ -41,17 +43,14 @@ void NivelVolcan::generarRoca()
     float origenX = 1090;
     float origenY = 210;
 
-    // Varaciones en la generacion
+    // Variaciones en la generacion
     float min_Y = 0;
     float max_Y = 4;
     float min_X = -10;
     float max_X = 5;
 
     float dirX = generarNumeroaleatorio(min_X,max_X);
-
-    //float dirY = generarNumeroaleatorio(min_Y,max_Y);
     float dirY = -4;
-
 
     proyectil* p = armaVolcan->crearProyectil(origenX, origenY, dirX, dirY);
     proyectilesEnemigos.push_back(p);
@@ -72,15 +71,15 @@ void NivelVolcan::generarCorazonDesdeArriba()
     float xJug = jugador.getX();
 
     // Rango horizontal alrededor del jugador
-    float xMin = xJug - 300.0f;
-    float xMax = xJug + 300.0f;
+    float xMin = xJug - 300.0;
+    float xMax = xJug + 300.0;
 
-    // Por si acaso, limita un poco (ajusta según tu mundo)
-    if (xMin < 0.0f)   xMin = 0.0f;
-    if (xMax > 1500.0f) xMax = 1500.0f;
+    // Por si acaso, limitar un poco
+    if (xMin < 0.0f)   xMin = 0.0;
+    if (xMax > 1500.0f) xMax = 1500.0;
 
     float xSpawn = generarNumeroaleatorio(xMin, xMax);
-    float ySpawn = -50.0f;  // un poco por encima de la pantalla
+    float ySpawn = -50.0;
 
     // Modelo de caída: solo gravedad hacia abajo
     ModeloMovimiento* modeloCorazon = new ModeloMovimiento(500); // g fuerte, cae rápido
@@ -94,23 +93,24 @@ void NivelVolcan::generarCorazonDesdeArriba()
 
 void NivelVolcan::actualizar(float dt)
 {
-    // 1) Acumular tiempo
+    //Acumular tiempo
     tiempoAcumulado += dt;
 
-    // 2) ¿Toca generar una nueva bola de fuego?
+    //¿Toca generar una nueva bola de fuego?
     if (tiempoAcumulado >= intervaloGeneracion) {
         tiempoAcumulado = 0;
         generarRoca();
     }
 
-    // 3) Actualizar física de todas las rocas
+    //Actualizar física de todas las rocas
     for (proyectil* p : proyectilesEnemigos) {
         p->actualizar(dt);
     }
+
     //Acumulamos tiempo y generamos corazón cada cierto intervalo
     tiempoCorazones += dt;
     if (tiempoCorazones >= intervaloCorazones) {
-        tiempoCorazones = 0.0f;
+        tiempoCorazones = 0.0;
         generarCorazonDesdeArriba();
     }
 

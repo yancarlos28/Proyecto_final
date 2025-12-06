@@ -10,17 +10,19 @@ void proyectil::actualizar(float dt) {
         modelo->aplicar(posX, posY, velX, velY, dt);
     }
 }
+
 bool proyectil::debeDestruirse() const
 {
-    // Límites genéricos del “mundo” (los puedes ajustar fácil)
-    const float LIM_X_MIN = -200.0f;
-    const float LIM_X_MAX = 4000.0f;
-    const float LIM_Y_MIN = -200.0f;
-    const float LIM_Y_MAX = 2000.0f;
+    //Cuadrar segun mi escena
+    const float LIM_X_MIN = -200.0;
+    const float LIM_X_MAX = 4000.0;
+    const float LIM_Y_MIN = -200.0;
+    const float LIM_Y_MAX = 2000.0;
 
     return (posX < LIM_X_MIN || posX > LIM_X_MAX ||
             posY < LIM_Y_MIN || posY > LIM_Y_MAX);
 }
+
 //getters
 float proyectil::getX() const
 {

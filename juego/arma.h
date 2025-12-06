@@ -11,7 +11,9 @@ private:
 
     int danioBase;
     float velocidadProyectil;
-    ModeloMovimiento* modelo; // Puntero original (se clona para cada proyectil)
+
+    // Puntero original (se clona para cada proyectil)
+    ModeloMovimiento* modelo;
 
 public:
 

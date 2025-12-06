@@ -3,7 +3,6 @@
 #define CAVERMAN_H
 
 #include "personaje.h"
-#include <algorithm>
 
 class caverman : public personaje {
 
@@ -12,7 +11,7 @@ private:
     int energia;
     int puntuacion;
 
-    // salto
+    // Para saltar
     bool enSalto;
     float velSaltoY;
     float pisoY;
@@ -33,7 +32,7 @@ public:
     void curar(int valor);
     void debugPrint() const override;
 
-    //para salto
+    // Para saltar
     bool estaSaltando() const;
     void iniciarSalto();
     void actualizarSalto(float dt);

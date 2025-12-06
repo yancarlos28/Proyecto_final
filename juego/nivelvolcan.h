@@ -33,9 +33,6 @@ public:
     void eliminarRocaEnIndice(int indice);
     void actualizar(float dt) override;
 
-    // Interfaz del nivel
-    bool estaCompletado() const override { return completado; }
-    bool estaFallido() const override { return fallido; }
 
     float generarNumeroaleatorio(float min, float max);
     // Corazones (para que MainWindow los pueda dibujar)

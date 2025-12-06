@@ -14,27 +14,21 @@ public:
     explicit personaje(int vidaInicial = 100);
     virtual ~personaje();
 
-    // GETTERS (lectura pública)
-    int getVida() const { return vida; }
-    float getX() const { return posX; }
-    float getY() const { return posY; }
-    float getVelX() const { return velX; }
-    float getVelY() const { return velY; }
+    // Getter
+    int getVida() const;
+    float getX() const;
+    float getY() const;
+    float getVelX() const;
+    float getVelY() const;
 
-    // SETTERS (modificación controlada)
-    void setVida(int v) {
-        vida = (v < 0) ? 0 : v; }
-    void setPos(float x, float y) {
-        posX = x;
-        posY = y; }
-    void setVel(float vx, float vy) {
-        velX = vx;
-        velY = vy; }
+    // Setter
+    void setVida(int v);
+    void setPos(float x, float y);
+    void setVel(float vx, float vy);
 
     // Métodos de lógica del juego
-    virtual void mover(float dx, float dy);
     virtual void actualizar(float dt);
-    void recibirDanio(int valor) { setVida(getVida() - valor); } // Usa setter
+    void recibirDanio(int valor) { setVida(getVida() - valor); }
 
     // Para depuración
     virtual void debugPrint() const;

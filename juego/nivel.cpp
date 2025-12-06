@@ -22,7 +22,7 @@ const std::vector<proyectil*>& Nivel::getProyectilesEnemigos() const
     return proyectilesEnemigos;
 }
 const std::vector<proyectil*>& Nivel::getProyectiles() const {
-    // Por defecto, usamos los proyectiles de los enemigos
+    // Por defecto los proyectiles de los enemigos
     return proyectilesEnemigos;
 }
 caverman &Nivel::getJugador()

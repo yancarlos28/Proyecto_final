@@ -7,47 +7,35 @@ caverman::caverman()
     : personaje(120), energia(100), puntuacion(0),
     enSalto(false), velSaltoY(0.0), pisoY(720){}
 
-int caverman::getEnergia() const { return energia; }
+int caverman::getEnergia() const {
+    return energia; }
 
-int caverman::getPuntuacion() const { return puntuacion; }
+int caverman::getPuntuacion() const {
+    return puntuacion; }
 
-void caverman::setEnergia(int val) { energia = std::min(100, val); }
+void caverman::setEnergia(int val) {
+    energia = std::min(100, val); }
 
-void caverman::setPuntuacion(int val) { puntuacion = val; }
+void caverman::setPuntuacion(int val) {
+    puntuacion = val; }
 
-//lanzar
-void caverman::lanzar() {
-    // Notifica al nivel para crear proyectil
-    // qDebug() << "[Caverman] Solicita lanzar proyectil";
-}
 
 //curar
 void caverman::curar(int valor) {
 
     int nuevaVida = getVida() + valor;
-    setVida(std::min(VIDA_MAXIMA, nuevaVida)); // Usa constante protegida
+    setVida(std::min(VIDA_MAXIMA, nuevaVida));
 
-    // Para energía (atributo propio)
     energia += valor;
     if (energia > 100) energia = 100;
 }
-
-//debbuging
-void caverman::debugPrint() const {
-    qDebug() << "Caverman pos=(" << getX() << "," << getY()
-    << ") vida=" << getVida()  //
-    << " energia=" << energia << " pts=" << puntuacion;
-}
-
-bool caverman::estaSaltando() const { return enSalto; }
-
 
 //para saltar
 void caverman::iniciarSalto()
 {
     if (!enSalto) {
         enSalto = true;
-        velSaltoY = -350;
+        velSaltoY = -500;
         pisoY = getY();
     }
 }
@@ -69,8 +57,16 @@ void caverman::actualizarSalto(float dt)
             velSaltoY = 0;
             enSalto = false;
         }
-
         setPos(x, y);
     }
 
+}
+bool caverman::estaSaltando() const {
+    return enSalto; }
+
+//debbuging
+void caverman::debugPrint() const {
+    qDebug() << "Caverman pos=(" << getX() << "," << getY()
+    << ") vida=" << getVida()  //
+    << " energia=" << energia << " pts=" << puntuacion;
 }

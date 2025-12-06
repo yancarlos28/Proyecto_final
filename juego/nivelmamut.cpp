@@ -44,18 +44,14 @@ NivelMamut::NivelMamut()
     velCaida = 0.0;
 
 }
+
 //Destructor
 NivelMamut::~NivelMamut()
 {
-    /*for (proyectil* p : proyectilesJugador) {
-        delete p;
-    }
-    proyectilesJugador.clear();*/
-
     delete armaJugador; //Nivel ya lo hace
 }
 
-//Lanza
+//Lanzas//jugador//caídas
 void NivelMamut::lanzarDesdeJugador(float dirX)
 {
     if (!armaJugador) return;
@@ -70,11 +66,11 @@ void NivelMamut::lanzarDesdeJugador(float dirX)
     municionJugador--;
 
     // Normalizar signo
-    float dx = (dirX >= 0.0f) ? 1.0 : -1.0;
+    float dx = (dirX >= 0.0) ? 1.0 : -1.0;
     float dy = -1;
 
     float x = jugador.getX();
-    float y = jugador.getY() - 30.0f;
+    float y = jugador.getY() - 30.0;
 
     proyectil* p = armaJugador->crearProyectil(x, y, dx, dy);
     proyectilesJugador.push_back(p);
@@ -118,18 +114,19 @@ void NivelMamut::recogerFlechaPorIndice(int indice)
 
     // Aumentar munición del jugador
     municionJugador+=3;
-    qDebug() << "[Mamut] Flecha recogida. Munición =" << municionJugador;
+    //qDebug() << "[Mamut] Flecha recogida. Munición =" << municionJugador;
 
     delete p;
     proyectilesEnemigos.erase(proyectilesEnemigos.begin() + indice);
 }
-
 void NivelMamut::actualizarFlechas(float dt)
 {
     int i = 0;
     while (i < static_cast<int>(proyectilesEnemigos.size())) {
         proyectil* p = proyectilesEnemigos[i];
-        if (!p) { ++i; continue; }
+        if (!p) {
+            ++i;
+            continue; }
 
         p->actualizar(dt);
 
@@ -137,13 +134,14 @@ void NivelMamut::actualizarFlechas(float dt)
         if (p->debeDestruirse()) {
             delete p;
             proyectilesEnemigos.erase(proyectilesEnemigos.begin() + i);
-        } else {
+        }
+        else {
             ++i;
         }
     }
 }
 
-//Actualizar nivel/soga/flechas
+//Actualizar
 void NivelMamut::actualizar(float dt)
 {
     // 1) Movimiento / IA del mamut
@@ -158,18 +156,18 @@ void NivelMamut::actualizar(float dt)
         float y = jugador.getY();
 
         if (y < pisoY) {
-            float g = 800.0f;
+            float g = 800.0;
             velCaida += g * dt;
             y += velCaida * dt;
 
             if (y >= pisoY) {
                 y = pisoY;
-                velCaida = 0.0f;
+                velCaida = 0.0;
             }
 
             jugador.setPos(x, y);
         } else {
-            velCaida = 0.0f;
+            velCaida = 0.0;
             jugador.setPos(x, pisoY);
         }
     }
@@ -181,7 +179,7 @@ void NivelMamut::actualizar(float dt)
 
     // 5) Generar flechas periódicamente
     tiempoFlechas += dt;
-    if (tiempoFlechas >= 2.0) {   // o intervaloFlechas si lo usas
+    if (tiempoFlechas >= 2.0) {
         tiempoFlechas = 0.0;
         GenerarFlechaDesdeArriba();
     }
@@ -190,7 +188,14 @@ void NivelMamut::actualizar(float dt)
     actualizarFlechas(dt);
 
 }
+void NivelMamut::actualizarSoga(float dt)
+{
+    movimientoSoga.actualizar(dt, sogaXExtremo, sogaYExtremo);
 
+    if (jugadorColgado) {
+        jugador.setPos(sogaXExtremo, sogaYExtremo);
+    }
+}
 
 //Agarrar y soltar la soga
 void NivelMamut::intentarAgarrarSoga()
@@ -222,17 +227,11 @@ void NivelMamut::soltarSoga()
     jugadorColgado = false;
 
     // Empezar caída desde donde está
-    velCaida = 0.0f;
+    velCaida = 0.0;
 }
-void NivelMamut::actualizarSoga(float dt)
-{
-    movimientoSoga.actualizar(dt, sogaXExtremo, sogaYExtremo);
-
-    if (jugadorColgado) {
-        jugador.setPos(sogaXExtremo, sogaYExtremo);
-    }
-}
-
-bool NivelMamut::estaColgado() const { return jugadorColgado; }
-float NivelMamut::getSogaXAncla() const { return movimientoSoga.getXAncla(); }
-int NivelMamut::getMunicionJugador() const { return municionJugador; }
+bool NivelMamut::estaColgado() const {
+    return jugadorColgado; }
+float NivelMamut::getSogaXAncla() const {
+    return movimientoSoga.getXAncla(); }
+int NivelMamut::getMunicionJugador() const {
+    return municionJugador; }

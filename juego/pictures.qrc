@@ -1,0 +1,37 @@
+<RCC>
+    <qresource prefix="/">
+        <file>sprites/walk-caverman.png</file>
+        <file>sprites/bola_fuego.png</file>
+        <file>sprites/danio.png</file>
+        <file>sprites/mamut_corriendo.png</file>
+        <file>escenas/forest.jpg</file>
+        <file>escenas/bosque.jpg</file>
+        <file>sprites/lanzar_roca.png</file>
+        <file>sprites/caverman_lanza.png</file>
+        <file>sprites/lanza.png</file>
+        <file>sprites/mamut_herido.png</file>
+        <file>sprites/mamut_muerto.png</file>
+        <file>recursos_juego/corazones.PNG</file>
+        <file>escenas/nieve.jpg</file>
+        <file>sprites/jefesnowman_lanzarbola.png</file>
+        <file>sprites/bola_nieve.png</file>
+        <file>escenas/gameover.jpg</file>
+        <file>escenas/menu.avif</file>
+        <file>escenas/menu.jpg</file>
+        <file>sprites/lanzas_3.png</file>
+        <file>recursos_juego/corazon.PNG</file>
+        <file>sprites/antorcha.png</file>
+        <file>sprites/bolita_fuego.png</file>
+        <file>recursos_juego/antorcha_fuego.png</file>
+        <file>recursos_juego/termometro_escala.png</file>
+        <file>escenas/hielo.jpeg</file>
+        <file>recursos_juego/meta_volcan.png</file>
+        <file>sprites/snoman_derrotado2.png</file>
+        <file>escenas/hielo_blanco.jpeg</file>
+        <file>sprites/jefesnowman_lanzarbola2.png</file>
+        <file>sprites/jefesnowman_lanzarbola3.png</file>
+        <file>recursos_juego/game_over.jpg</file>
+        <file>recursos_juego/you_win.jpg</file>
+        <file>recursos_juego/banana.png</file>
+    </qresource>
+</RCC>

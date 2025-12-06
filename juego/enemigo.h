@@ -11,10 +11,11 @@ private:
     int fase;
 
 protected:
+
     // Getter protegido para clases derivadas
-    bool getAlerta() const { return enAlerta; }
-    void setAlerta(bool alerta) { enAlerta = alerta; }
-    void setFase(int f) { fase = f; }
+    bool getAlerta() const;
+    void setAlerta(bool alerta);
+    void setFase(int f);
 
 public:
 
@@ -22,7 +23,6 @@ public:
     ~enemigo() override = default;
     int getFase() const { return fase; }
 
-    // Método polimórfico de comportamiento
     virtual void actuar(float dt);
     void debugPrint() const override;
 };

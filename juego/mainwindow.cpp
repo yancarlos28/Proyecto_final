@@ -39,14 +39,15 @@ MainWindow::MainWindow(QWidget *parent)
 
     //Lanzas mamut
     QPixmap hudFlecha(":/sprites/lanzas_3.png");
-    QPixmap flechaEscalada = hudFlecha.scaled(ui->lblIconoFlecha->width()-60,ui->lblIconoFlecha->height()-20,
-            Qt::KeepAspectRatio,
-            Qt::SmoothTransformation);
+    QPixmap flechaEscalada = hudFlecha.scaled(ui->lblIconoFlecha->width()-60,ui->lblIconoFlecha->height()-20,Qt::KeepAspectRatio,Qt::SmoothTransformation);
     ui->lblIconoFlecha->setPixmap(flechaEscalada);
-    ui->lblIconoFlecha->setScaledContents(true); // opcional, por si el tamaño del label cambia
+    ui->lblIconoFlecha->setScaledContents(true);
     ui->lblMunicion->setText("0");
+    // Esconde al inicio
+    ui->lblMunicion->hide();
+    ui->lblMunicion->hide();
 
-    // --- Inicializar sonidos ---
+    // Inicializar sonidos
     playerMamut = new QMediaPlayer(this);
     audioMamut  = new QAudioOutput(this);
     playerMamut->setAudioOutput(audioMamut);
@@ -63,20 +64,12 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Barra de vida del enemigo
     ui->pbVidaEnemigo->setMinimum(0);
-    ui->pbVidaEnemigo->setMaximum(300);   // por ejemplo, vida máxima del mamut/snowman
-    ui->pbVidaEnemigo->setFixedSize(300, 250);   // ancho 250px, alto 25px
+    ui->pbVidaEnemigo->setMaximum(300);
+    ui->pbVidaEnemigo->setFixedSize(300, 250);
     ui->pbVidaEnemigo->setValue(0);
-    ui->pbVidaEnemigo->move(1050, 80); // X = 1200, Y = 20  (ejemplo)
+    ui->pbVidaEnemigo->move(1050, 80);
     ui->pbVidaEnemigo->setTextVisible(false);
-
-
-    ui->pbVidaEnemigo->hide();            // ocúltala al inicio
-
-
-
-    // Esconde al inicio
-    ui->lblMunicion->hide();
-    ui->lblMunicion->hide();
+    ui->pbVidaEnemigo->hide();
 
 }
 
@@ -237,20 +230,17 @@ void MainWindow::cargarNivel(TipoNivel tipo)
 
         // Duración nivel volcán
         duracionNivel =40;
-        // 👉 Posición inicial del jugador en volcán
+        // Posición inicial del jugador en volcán
         caverman &jug = nivel->getJugador();
         volcanInicioX = jug.getX();
         volcanInicioY = jug.getY();
 
-        // 👉 Crear sprite de la meta
-        QPixmap metaPix(":/recursos_juego/meta_volcan.png");   // cambia a tu ruta real
+        // Crear sprite de la meta
+        QPixmap metaPix(":/recursos_juego/banana.png");
         metaVolcanItem = scene->addPixmap(metaPix);
         metaVolcanItem->setZValue(8);
-        metaVolcanItem->setScale(0.1);          // la haces más pequeña si quieres
-
-        // Pon la meta lejos para que tenga que ir hasta allá
-        // (ajusta estas coordenadas a donde quieras que esté la meta)
-        metaVolcanItem->setPos(1410, 560);
+        metaVolcanItem->setScale(0.2);
+        metaVolcanItem->setPos(1350, 500);
 
         // Estado inicial
         metaVolcanTomada = false;
@@ -751,8 +741,8 @@ void MainWindow::actualizarJuego()
             // Que flote un poquito encima del caverman
             metaVolcanItem->setVisible(true);
             metaVolcanItem->setPos(
-                cavermanSprite->x() + 10,
-                cavermanSprite->y() - 40
+                cavermanSprite->x() + 20,
+                cavermanSprite->y()-70
                 );
 
             // Margen de tolerancia para "llegó al inicio"

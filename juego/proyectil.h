@@ -17,6 +17,7 @@ private:
     std::unique_ptr<ModeloMovimiento> modelo;
 
 public:
+
     //constructor
     proyectil(float x, float y, float vx, float vy, int dmg, ModeloMovimiento* mod);
     // Destructor por defecto: unique_ptr se encarga del modelo

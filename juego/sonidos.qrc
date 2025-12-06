@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/">
+        <file>sonidos/jungle.mp3</file>
+        <file>sonidos/volcan.mp3</file>
+    </qresource>
+</RCC>

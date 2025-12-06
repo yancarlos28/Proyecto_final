@@ -10,7 +10,6 @@ Arma::Arma(int dmg, float vel, ModeloMovimiento* model)
 //Destructor
 Arma::~Arma() {
     delete modelo; // El arma es dueña del modelo base
-    //qDebug() << "[Arma] Modelo base destruido";
 }
 
 // Crear proyectil con dirección (dirX, dirY)
@@ -31,12 +30,6 @@ proyectil* Arma::crearProyectil(float x, float y, float dirX, float dirY)
     // 4. Clonar el modelo base (solo gravedad)
     ModeloMovimiento* modeloClonado = new ModeloMovimiento(*modelo);
 
-    //qDebug() << "[Arma] Proyectil creado en"
-             //<< x << "," << y << "vel:"
-             //<< vx << "," << vy;
-
     // 5. Crear proyectil nuevo
     return new proyectil(x, y, vx, vy, danioBase, modeloClonado);
 }
-
-

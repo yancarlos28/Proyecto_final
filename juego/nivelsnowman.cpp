@@ -8,8 +8,7 @@
 NivelSnowman::NivelSnowman()
 {
     // 1) Posición inicial del caverman
-    //    Vista frontal: lo ponemos abajo, centrado
-    jugador.setPos(800, 900); // ajusta según alto de tu escena
+    jugador.setPos(800, 900);
 
     // 2) Posición inicial del Snowman
     jefeSnow.setPos(768, 300);
@@ -22,32 +21,30 @@ NivelSnowman::NivelSnowman()
     // 4) Estado de patrones
     patronActual = PatronAtaque::Parabolico;
     tiempoDesdeUltimoDisparo = 0.0;
-    intervaloDisparo = 1.2;         // dispara cada 1.2 s
+    intervaloDisparo = 1.2;
 
     tiempoCambioPatron = 0.0;
-    intervaloCambioPatron = 3.0;    // cambia de patrón cada 6 s aprox
 
-    // ---------- ANTORCHA DEL JUGADOR ----------
+    // Antorcha
     antorcha.activa        = false;
     antorcha.explotada     = false;
     antorcha.x             = 0.0f;
     antorcha.y             = 0.0f;
-    antorcha.velocidadY    = -250.0f;   // sube
-    antorcha.angulo        = 0.0f;
-    antorcha.velAngular    = 360.0f;    // 1 vuelta por segundo
+    antorcha.velocidadY    = -250.0;   // sube
+    antorcha.angulo        = 0.0;
+    antorcha.velAngular    = 360.0;    // 1 vuelta por segundo
 
-    // No nos complicamos: la antorcha explota SIEMPRE
-    // cerca del Snowman, un poquito por debajo
-    alturaExplosionAntorcha = jefeSnow.getY() + 200.0f;
+    alturaExplosionAntorcha = jefeSnow.getY() + 200.0;
 
-    // Estos dos ya no son críticos, pero los dejamos con algo coherente
-    antorcha.yInicio            = 0.0f;
-    antorcha.distanciaExplosion = 0.0f;  // NO la vamos a usar en la condición
-    // --- NUEVO: temperatura del nivel ---
-    tempMax = 0.0f;        // empieza a 0°C
-    tempMin = -30.0f;      // mínimo -30°C
+    // Para arreglo de la antorcha
+    antorcha.yInicio            = 0.0;
+    antorcha.distanciaExplosion = 0.0;
+
+    // Temperatura del nivel
+    tempMax = 0.0;        // empieza a 0°C
+    tempMin = -30.0;      // mínimo -30°C
     temperaturaActual = tempMax;
-    velocidadEnfriamiento = 0.3f;   // baja ~0.3 °C por segundo (ajusta)
+    velocidadEnfriamiento = 0.3;   // baja ~0.3 °C por segundo
 
 }
 
@@ -79,7 +76,7 @@ void NivelSnowman::dispararParabolicoAlJugador()
 
     // Normalizar dirección
     float mag = std::sqrt(dx*dx + dy*dy);
-    if (mag < 0.001f) return;
+    if (mag < 0.001) return;
     dx /= mag;
     dy /= mag;
 
@@ -87,69 +84,59 @@ void NivelSnowman::dispararParabolicoAlJugador()
     proyectil* bola = armaParabolica->crearProyectil(xSnow, ySnow, dx, dy);
     bolasParabolicas.push_back(bola);
 
-    qDebug() << "[Snowman] Disparo parabólico hacia el jugador";
+    //qDebug() << "[Snowman] Disparo parabólico hacia el jugador";
 }
 
 void NivelSnowman::dispararRafagaOscilante()
 {
-    // Creamos varias bolas que se mueven en X con trayectoria sinusoidal en Y
     float xSnow = jefeSnow.getX();
     float ySnow = jefeSnow.getY();
 
-    // Decidir dirección base según dónde esté el jugador
     float xJug = jugador.getX();
     float dirX = (xJug >= xSnow) ? 1.0 : -1.0;
+    //Cantidad para ráfagas
+    int cantidad = 1;
+    float separacion = 50.0;
 
-    int cantidad = 1;          // 1 bolas en la ráfaga
-    float separacion = 50.0;  // pequeña separación vertical
-
-    for (int i = 0; i < cantidad; ++i) {
+    for (int i = 0; i < cantidad; i++) {
         BolaNieveOscilante bola;
         bola.x = xSnow;
         bola.y = ySnow - i * separacion;
 
-        bola.velocidadX = 200.0f * dirX; // rápida en X
-        bola.velocidadY = 200.0f;
+        bola.velocidadX = 200.0 * dirX;
+        bola.velocidadY = 200.0;
 
-        bola.amplitud = 60.0;   // cuánto sube y baja
-        bola.frecuencia = 4.0;  // qué tan rápido oscila
-        bola.fase = 0.0f;
-        bola.yCentro = bola.y;   // línea central para la oscilación
+        bola.amplitud = 60.0;
+        bola.frecuencia = 4.0;
+        bola.fase = 0.0;
+        bola.yCentro = bola.y;
 
         bolasOscilantes.push_back(bola);
     }
 
-    qDebug() << "[Snowman] Ráfaga oscilante";
+    //qDebug() << "[Snowman] Ráfaga oscilante";
 }
+//Lanzamiento de antorcha
 void NivelSnowman::lanzarAntorcha()
 {
-    // Solo 1 antorcha en vuelo a la vez
     if (antorcha.activa && !antorcha.explotada) return;
 
     float xJug = jugador.getX();
     float yJug = jugador.getY();
 
-    // IMPORTANTE:
-    // Vamos a tratar (antorcha.x, antorcha.y) como CENTRO de la antorcha,
-    // porque en MainWindow la dibujas centrada.
-    //
-    // xJug, yJug son la posición lógica del caverman (arriba-izquierda del sprite),
-    // así que la antorcha la "pegamos" un poco encima del jugador:
+    antorcha.x = xJug -130.0;
+    antorcha.y = yJug - 400.0;
 
-    antorcha.x = xJug -130.0f;   // un poquito a la derecha del caverman
-    antorcha.y = yJug - 400.0f;   // por encima del caverman
-
-    antorcha.yInicio     = antorcha.y;   // por si luego quieres usar distancia
-    antorcha.velocidadY  = -250.0f;      // hacia arriba
+    antorcha.yInicio     = antorcha.y;   // por si luego quieres uso distancia
 
     antorcha.activa      = true;
     antorcha.explotada   = false;
-    antorcha.angulo      = 0.0f;
-    alturaExplosionAntorcha = jefeSnow.getY() + 20.0f; // +20 para un poco debajo del snowman
+    antorcha.angulo      = 0.0;
+    alturaExplosionAntorcha = jefeSnow.getY() + 20.0;
 }
 
 
-// ---------- ACTUALIZACIONES DE PROYECTILES ----------
+// Actualizar proyectiles
 
 void NivelSnowman::actualizarBolasParabolicas(float dt)
 {
@@ -157,14 +144,14 @@ void NivelSnowman::actualizarBolasParabolicas(float dt)
     while (i < bolasParabolicas.size()) {
         proyectil* p = bolasParabolicas[i];
 
-        // Actualizar usando el ModeloMovimiento (parabólico)
+        // Actualizar usando el m. parabólico
         p->actualizar(dt);
 
         float x = p->getX();
         float y = p->getY();
 
-        // Límite sencillo de la escena (ajusta a tu tamaño real)
-        if (x < 0.0f || x > 1536.0f || y < 0.0f || y > 900.0f) {
+        // Límite sencillo de la escena
+        if (x < 0.0f || x > 1536.0 || y < 0.0f || y > 900.0f) {
             delete p;
             bolasParabolicas.erase(bolasParabolicas.begin() + i);
         }
@@ -180,25 +167,25 @@ void NivelSnowman::actualizarBolasOscilantes(float dt)
     while (i < bolasOscilantes.size()) {
         BolaNieveOscilante &b = bolasOscilantes[i];
 
-        b.x += b.velocidadX * dt;      // movimiento horizontal
-        b.yCentro += b.velocidadY * dt; // el centro se desplaza hacia abajo
+        b.x += b.velocidadX * dt;
+        b.yCentro += b.velocidadY * dt;
 
         b.fase += b.frecuencia * dt;
 
-        // Y se oscilante alrededor de ese centro que va cayendo
+        // Oscila por el centro que va cayendo
         b.y = b.yCentro + b.amplitud * std::sin(b.fase);
 
 
-        // Eliminar si sale de pantalla
-        if (b.x < 0.0f || b.x > 1536.0f) {
+        // Eliminar si sale de vista
+        if (b.x < 0.0 || b.x > 1536.0) {
             bolasOscilantes.erase(bolasOscilantes.begin() + i);
         } else {
-            ++i;
+            i++;
         }
     }
 }
 
-// ---------- LOOP PRINCIPAL DEL NIVEL ----------
+// Actualización principal del nivel
 
 void NivelSnowman::actualizar(float dt)
 {
@@ -207,9 +194,9 @@ void NivelSnowman::actualizar(float dt)
     if (temperaturaActual < tempMin)
         temperaturaActual = tempMin;
 
-    // 2) Pasar temperatura al jefe y dejar que actúe (IA)
+    // 2) Actua agente inteligente
     jefeSnow.percibirTemperatura(temperaturaActual);
-    jefeSnow.actuar(dt);  // aquí decide fase y movimiento
+    jefeSnow.actuar(dt);  // Decide fase y movimiento
 
     // 3) Control de disparos
     tiempoDesdeUltimoDisparo += dt;
@@ -218,14 +205,14 @@ void NivelSnowman::actualizar(float dt)
     int fase = jefeSnow.getFaseAtaque();
 
     if (fase == 1 || fase == 2) {
-        patronActual = PatronAtaque::Parabolico;   // Fase 1 y 2: disparo "normal"
-    } else { // fase 3
-        patronActual = PatronAtaque::Oscilatorio;  // Fase 3: ondulatorio
+        patronActual = PatronAtaque::Parabolico; //dirección rectilínea al jugador
+    } else {
+        patronActual = PatronAtaque::Oscilatorio;  // Fase 3: Ondulatorio
     }
 
     // Disparar según el patrón actual
     if (tiempoDesdeUltimoDisparo >= intervaloDisparo) {
-        tiempoDesdeUltimoDisparo = 0.0f;
+        tiempoDesdeUltimoDisparo = 0.0;
 
         if (patronActual == PatronAtaque::Parabolico) {
             dispararParabolicoAlJugador();
@@ -244,7 +231,7 @@ void NivelSnowman::actualizar(float dt)
 
 void NivelSnowman::actualizarAntorchaYFuego(float dt)
 {
-    // --- ANTORCHA SUBIENDO ---
+    // Antorcha en subida
     if (antorcha.activa && !antorcha.explotada) {
 
         // Movimiento vertical
@@ -252,32 +239,24 @@ void NivelSnowman::actualizarAntorchaYFuego(float dt)
 
         // Rotación
         antorcha.angulo += antorcha.velAngular * dt;
-        if (antorcha.angulo >= 360.0f) antorcha.angulo -= 360.0f;
-        if (antorcha.angulo < 0.0f)    antorcha.angulo += 360.0f;
+        if (antorcha.angulo >= 360.0) antorcha.angulo -= 360.0;
+        if (antorcha.angulo < 0.0)    antorcha.angulo += 360.0;
 
-        // ALTURA DE EXPLOSIÓN: cerca del Snowman
-        // Recuerda: en Qt, Y más pequeño = más arriba.
-        float distanciaRecorrida = antorcha.yInicio - antorcha.y;  // cuánto ha subido
-        if (distanciaRecorrida >= 500.0f) {  // <-- ¡EXPLOSA DESPUÉS DE SUBIR 200px!
+        // Altura de explosión
+
+        float distanciaRecorrida = antorcha.yInicio - antorcha.y;
+        //Explotar
+        if (distanciaRecorrida >= 500.0) {
             antorcha.explotada = true;
             crearFragmentosDesdeAntorcha();
-            qDebug() << "¡EXPLOSIÓN! Distancia recorrida:" << distanciaRecorrida;
         }
-        /*if (distanciaRecorrida >= 200.0f && distanciaRecorrida <= 500)
-        {
-            crearFragmentosDesdeAntorcha();
-            qDebug() << "¡EXPLOSIÓN! Distancia recorrida:" << distanciaRecorrida;
-        }*/
 
-
-        // SEGURIDAD: solo se borra si se sale por arriba de la pantalla
-        // (esto es por si, por alguna razón, no explotó)
         if (antorcha.y < -100.0) {
             antorcha.activa = false;
         }
     }
 
-    // --- BOLITAS DE FUEGO ---
+    // Bolas de fuego
     int i = 0;
     while (i < static_cast<int>(bolitasFuego.size())) {
         BolitaFuego &b = bolitasFuego[i];
@@ -285,26 +264,30 @@ void NivelSnowman::actualizarAntorchaYFuego(float dt)
         b.x += b.velX * dt;
         b.y += b.velY * dt;
 
-        // pequeña "gravedad" hacia abajo
-        b.velY += 200.0f * dt;
+        // "Gravedad" hacia abajo
+        b.velY += 200.0 * dt;
 
-        if (b.x < 0.0f || b.x > 1920.0f || b.y < 0.0f || b.y > 1200.0f) {
+        if (b.x < 0.0f || b.x > 1920.0 || b.y < 0.0 || b.y > 1200.0) {
             bolitasFuego.erase(bolitasFuego.begin() + i);
         } else {
             ++i;
         }
     }
-    qDebug() << "Antorcha Y:" << antorcha.y << "Explosion Y:" << alturaExplosionAntorcha;
 }
 
 
-Snowman &NivelSnowman::getSnowman() { return jefeSnow; }
+Snowman &NivelSnowman::getSnowman() {
+    return jefeSnow; }
 
-const Snowman &NivelSnowman::getSnowman() const { return jefeSnow; }
+const Snowman &NivelSnowman::getSnowman() const {
+    return jefeSnow; }
 
-const vector<proyectil *> &NivelSnowman::getBolasParabolicas() const { return bolasParabolicas; }
+const vector<proyectil *> &NivelSnowman::getBolasParabolicas() const {
+    return bolasParabolicas; }
 
-const vector<BolaNieveOscilante> &NivelSnowman::getBolasOscilantes() const { return bolasOscilantes; }
+const vector<BolaNieveOscilante> &NivelSnowman::getBolasOscilantes() const {
+    return bolasOscilantes; }
+
 void NivelSnowman::eliminarBolaPorIndice(size_t i)
 {
     if (i < bolasParabolicas.size()) {
@@ -330,6 +313,8 @@ bool NivelSnowman::hayAntorchaActiva() const
     return antorcha.activa && !antorcha.explotada;
 }
 
+float NivelSnowman::getTemperaturaActual() const { return temperaturaActual; }
+
 const std::vector<BolitaFuego>& NivelSnowman::getBolitasFuego() const
 {
     return bolitasFuego;
@@ -344,14 +329,14 @@ void NivelSnowman::eliminarBolitaFuegoEnIndice(size_t i)
 void NivelSnowman::crearFragmentosDesdeAntorcha()
 {
     const int N = 5;
-    const float velocidadBase = 250.0f;
+    const float velocidadBase = 250.0;
 
-    float anguloBase = -M_PI / 2.0f;      // hacia arriba
-    float separacion = M_PI / 12.0f;      // abanico
+    float anguloBase = -M_PI / 2.0;      // Hacia arriba
+    float separacion = M_PI / 12.0;      // Abanico
 
     for (int i = 0; i < N; ++i) {
         BolitaFuego b;
-        b.x = antorcha.x+130;    // MISMA posición lógica de la antorcha
+        b.x = antorcha.x+130;    // "Misma posición lógica" de la antorcha
         b.y = antorcha.y+420;
 
         float offset = (i - (N - 1) / 2.0f) * separacion;
@@ -363,8 +348,8 @@ void NivelSnowman::crearFragmentosDesdeAntorcha()
         bolitasFuego.push_back(b);
     }
 
-    // opcional: desactivamos la antorcha para que ya no se dibuje como proyectil
+    // opcional: Se desactiva la antorcha para que ya no se dibuje como proyectil
     antorcha.activa = false;
-    qDebug() << "Antorcha desactivada";
+
 }
 
