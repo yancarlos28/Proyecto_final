@@ -43,11 +43,11 @@ MainWindow::MainWindow(QWidget *parent)
     ui->lblIconoFlecha->setPixmap(flechaEscalada);
     ui->lblIconoFlecha->setScaledContents(true);
     ui->lblMunicion->setText("0");
-    // Esconde al inicio
     ui->lblMunicion->hide();
     ui->lblMunicion->hide();
 
-    // Inicializar sonidos
+    // Inicializar sonidos y parar
+
     playerMamut = new QMediaPlayer(this);
     audioMamut  = new QAudioOutput(this);
     playerMamut->setAudioOutput(audioMamut);
@@ -158,7 +158,7 @@ void MainWindow::iniciarNivel(TipoNivel tipo)
     if (!barraVidaItem) {
         barraVidaSheet.load(":/recursos_juego/corazones.PNG");
         if (barraVidaSheet.isNull()) {
-            qDebug() << "ERROR: no se pudo cargar corazones.png";
+            //qDebug() << "No se pudo cargar corazones.png";
         } else {
             vidaFrameAncho = barraVidaSheet.width();
             vidaFrameAlto  = barraVidaSheet.height() / 6;
@@ -281,8 +281,9 @@ void MainWindow::cargarNivel(TipoNivel tipo)
         mamut &boss = nivelMamut->getMamut();
         mamutSprite->setPos(boss.getX(), boss.getY());
         ui->pbVidaEnemigo->setMinimum(0);
-        ui->pbVidaEnemigo->setMaximum(200);           // VIDA MÁXIMA FIJA DEL MAMUT
-        ui->pbVidaEnemigo->setValue(boss.getVida());  // empieza en 200
+        //Configurar vida del mamut
+        ui->pbVidaEnemigo->setMaximum(200);
+        ui->pbVidaEnemigo->setValue(boss.getVida());
         ui->pbVidaEnemigo->show();
 
         // Crear soga gráfica
@@ -305,11 +306,8 @@ void MainWindow::cargarNivel(TipoNivel tipo)
         nivel = std::make_unique<NivelSnowman>();
         termometroSheet.load(":/recursos_juego/termometro_escala.png");
 
-        QPixmap frameTerm = termometroSheet.copy(
-            0,              // x = 0 (primer termómetro)
-            0,              // y = 0
-            termFrameAncho, // 100
-            termFrameAlto   // 293
+        QPixmap frameTerm = termometroSheet.copy(0,0,termFrameAncho,
+            termFrameAlto
             );
         // Lo agregamos a la escena
         termometroItem = scene->addPixmap(frameTerm);
@@ -340,8 +338,8 @@ void MainWindow::cargarNivel(TipoNivel tipo)
             Snowman &boss = ns->getSnowman();
             snowmanSprite->setPos(boss.getX(), boss.getY());
             ui->pbVidaEnemigo->setMinimum(0);
-            ui->pbVidaEnemigo->setMaximum(300);           // VIDA MÁXIMA FIJA DEL SNOWMAN
-            ui->pbVidaEnemigo->setValue(boss.getVida());  // empieza en 300
+            ui->pbVidaEnemigo->setMaximum(300);
+            ui->pbVidaEnemigo->setValue(boss.getVida());
             ui->pbVidaEnemigo->show();
         }
         // 5) Este nivel no tiene temporizador por ahora
@@ -393,9 +391,8 @@ void MainWindow::mostrarPantallaResultado(bool gano)
     QRectF r = scene->sceneRect();
     QPixmap imgEscalada;
 
-    // --- ESCALADO ---
+    // Escalado
     if (tipoNivelActual == TipoNivel::Mamut) {
-        // MAMUT: lo dejamos como tú lo tenías (tamaño original del JPG)
         imgEscalada = img.scaled(
             img.width(),
             img.height(),
@@ -403,8 +400,7 @@ void MainWindow::mostrarPantallaResultado(bool gano)
             Qt::SmoothTransformation
             );
     } else {
-        // OTROS NIVELES (Volcán, Snowman): imagen más pequeña, NO pantalla completa
-        const int maxAncho = 700;  // ajusta si la quieres más grande/pequeña
+        const int maxAncho = 700;
         const int maxAlto  = 500;
 
         imgEscalada = img.scaled(
@@ -425,7 +421,7 @@ void MainWindow::mostrarPantallaResultado(bool gano)
         }
     }
 
-    // --- POSICIÓN ---
+    //
     if (tipoNivelActual == TipoNivel::Mamut) {
         // Tu posición especial para mamut (la dejo igual)
         float x = r.center().x() - imgEscalada.width()  - 260;
@@ -725,11 +721,7 @@ void MainWindow::actualizarJuego()
 
                 // Ocultar o eliminar la meta del mapa
                 metaVolcanItem->setVisible(false);
-                // O si prefieres: scene->removeItem(metaVolcanItem);
-                //                delete metaVolcanItem;
-                //                metaVolcanItem = nullptr;
-
-                qDebug() << "Meta del volcán tomada";
+                //qDebug() << "Meta del volcán tomada";
             }
         }
 
@@ -750,12 +742,10 @@ void MainWindow::actualizarJuego()
 
             if (std::fabs(dx) < tolerancia && std::fabs(dy) < tolerancia) {
                 metaVolcanCompletada = true;
-                qDebug() << "Completó objetivo del volcán (recogió meta y volvió al inicio)";
-
-                // Objetivo del volcán completado (trajo la bandera)
+                // Objetivo del volcán completado
                 mostrarPantallaResultado(true);
                 playerVolcan->stop();
-                // O mostrar mensaje de victoria, etc.
+
             }
         }
     }
@@ -769,26 +759,19 @@ void MainWindow::actualizarJuego()
             // Posición
             snowmanSprite->setPos(boss.getX(), boss.getY());
 
-            // Escala según IA (fase/temperatura)
-            float escalaBase = 4.0f;  // la que ya usabas
+            float escalaBase = 4.0;
             snowmanSprite->setScale(escalaBase * boss.getEscalaTamano());
-
-            // --- Decidimos qué frame mostrar ---
-            // Suponiendo:
-            //  temp > -5   -> termómetro "alto" (frame 0)
-            // -10 < temp <= -5 -> medio (frame 1)
-            // temp <= -10  -> muy frío (frame 2)
 
             int index = 0;
             if (temp <= -10.0f) {
                 index = 2;
-            } else if (temp <= -5.0f) {
+            } else if (temp <= -5.0) {
                 index = 1;
             } else {
                 index = 0;
             }
 
-            int srcX = index * termFrameAncho; // 0, 100 o 200
+            int srcX = index * termFrameAncho;
             int srcY = 0;
 
             QPixmap frame = termometroSheet.copy(
@@ -807,7 +790,7 @@ void MainWindow::actualizarJuego()
         if (golpeNieve) {
             actualizarBarraVida(jug.getVida());
         }
-        // --- NUEVO: antorcha y fuego del jugador ---
+        // Antorcha y fuego del jugador
         sincronizarAntorchaConNivel();
         sincronizarBolitasFuegoConNivel();
         bool golpeBoss = evaluarColisionFuegoConSnowman();
@@ -816,11 +799,11 @@ void MainWindow::actualizarJuego()
         }
         //Muerte del jugador
         if(nivel->getJugador().getVida()==0){
-            qDebug() << "El caverman murió";
+            //qDebug() << "El caverman murió";
             mostrarPantallaResultado(false);   // PERDIÓ
         }
         if (static_cast<NivelSnowman*>(nivel.get())->getSnowman().getVida()==0){
-            qDebug() << "El snowman murió";
+            //qDebug() << "El snowman murió";
             mostrarPantallaResultado(true);    // GANÓ
         }
 
@@ -831,7 +814,7 @@ void MainWindow::actualizarJuego()
         cavermanSprite->setPos(jug.getX(), jug.getY());
     }
 
-    // Posicionar barra de vida en la pantalla
+    // Posicionar barra de vida caverman en la pantalla
     if (barraVidaItem) {
         QPointF esquina = ui->graphicsView->mapToScene(0, 0);
         float margenX = 40.0;
@@ -859,11 +842,10 @@ void MainWindow::actualizarTiempo()
             QString("Restante: %1 s").arg(segundosRestantesNivel)
             );
 
-        // TRIGGER: cuando se acaba el tiempo DEL VOLCÁN
         if (segundosRestantesNivel == 0 &&
             tipoNivelActual == TipoNivel::Volcan)
         {
-            qDebug() << "Se acabó el tiempo del volcán";
+            //qDebug() << "Se acabó el tiempo del volcán";
             mostrarPantallaResultado(false);   // PERDIÓ
             if (playerVolcan) playerVolcan->stop();
         }
@@ -1116,10 +1098,9 @@ bool MainWindow::evaluarColisionCorazonesConJugador()
 
         if (cavermanSprite->collidesWithItem(item)) {
             // 1) Curar vida del jugador
-            // Opción segura: usar daño negativo (si tu caverman lo soporta)
-            jug.recibirDanio(-20); // suma 20 de vida
+            jug.recibirDanio(-20);
 
-            // 2) Actualizar HUD de vida
+            // 2) Actualizar barra de vida
             actualizarBarraVida(jug.getVida());
 
             // 3) Eliminar corazón lógico y sprite
@@ -1165,9 +1146,6 @@ bool MainWindow::evaluarColisionFuegoConSnowman()
             boss.recibirDanio(10);  // ajusta el daño que quieras
             ui->pbVidaEnemigo->setValue(boss.getVida());
 
-            // (Opcional) cambiar animación del snowman a daño
-            // snowmanSprite->mostrarDanioSnowman();  // si lo implementas
-
             // 1) Quitar sprite
             scene->removeItem(item);
             delete item;
@@ -1185,9 +1163,6 @@ bool MainWindow::evaluarColisionFuegoConSnowman()
                     snowmanSprite->matarSnowman();
                 }
             }
-
-
-
             continue;   // no incrementamos i aquí
         }
 
@@ -1250,7 +1225,7 @@ void MainWindow::sincronizarCorazonesVolcan()
         corazonesSprites.pop_back();
     }
 
-    QPixmap corazonPixmap(":/recursos_juego/corazon.PNG"); // pon aquí la ruta de tu sprite
+    QPixmap corazonPixmap(":/recursos_juego/corazon.PNG");
     while (corazonesSprites.size() < corazones.size()) {
         QGraphicsPixmapItem *item = scene->addPixmap(corazonPixmap);
         item->setZValue(6);
@@ -1280,7 +1255,7 @@ void MainWindow::sincronizarLanzasConNivel()
         lanzasSprites.pop_back();
     }
 
-    static QPixmap lanzaPixmap(":/sprites/lanza.png"); // o el recurso correcto
+    static QPixmap lanzaPixmap(":/sprites/lanza.png");
 
     while (lanzasSprites.size() < lanzas.size()) {
         QGraphicsPixmapItem* item = scene->addPixmap(lanzaPixmap);
@@ -1299,20 +1274,20 @@ void MainWindow::sincronizarLanzasConNivel()
         proyectil* p = lanzas[i];
         QGraphicsPixmapItem* item = lanzasSprites[i];
 
-        // --- POSICIÓN ---
-        // Suponemos que p->getX(), getY() son el CENTRO lógico de la lanza.
+        // Posición
+        // Suponemos que p->getX(), getY() centro lógico de la lanza.
         QRectF br = item->boundingRect();
         float w = br.width()  * item->scale();
         float h = br.height() * item->scale();
 
-        item->setPos(p->getX() - w / 2.0f,
-                     p->getY() - h / 2.0f);
+        item->setPos(p->getX() - w / 2.0,
+                     p->getY() - h / 2.0);
 
-        // --- ROTACIÓN ---
+        // Rotar lanza
         float vx = p->getVelX();
         float vy = p->getVelY();
 
-        if (vx == 0.0f && vy == 0.0f) {
+        if (vx == 0.0 && vy == 0.0) {
             // Sin velocidad, no rotamos (para que no dé basura)
             continue;
         }
@@ -1423,7 +1398,7 @@ void MainWindow::sincronizarAntorchaConNivel()
         const AntorchaJugador &ant = ns->getAntorcha();
 
         if (!antorchaItem) {
-            QPixmap pix(":/recursos_juego/antorcha_fuego.png");  // cambia al recurso que tengas
+            QPixmap pix(":/recursos_juego/antorcha_fuego.png");
             antorchaItem = scene->addPixmap(pix);
             antorchaItem->setZValue(7);
             antorchaItem->setScale(0.1);
@@ -1436,16 +1411,12 @@ void MainWindow::sincronizarAntorchaConNivel()
 
         antorchaItem->setVisible(true);
 
-        // --- IMPORTANTE: usar (x,y) como CENTRO ---
+        // Usar x,y como centro
         QRectF br = antorchaItem->boundingRect();
         float ancho = br.width()  * antorchaItem->scale();
         float alto  = br.height() * antorchaItem->scale();
 
-        antorchaItem->setPos(
-            ant.x - ancho / 2.0f,
-            ant.y - alto  / 2.0f
-            );
-
+        antorchaItem->setPos(ant.x - ancho / 2.0,ant.y - alto  / 2.0);
         // Rotación
         antorchaItem->setRotation(ant.angulo);
     } else {
